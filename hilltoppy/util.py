@@ -4,7 +4,10 @@ Utility functions for Hilltop functions.
 """
 from os import path
 from datetime import datetime
-from configparser import ConfigParser
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import SafeConfigParser as ConfigParser
 
 
 def parse_dsn(dsn_path):

@@ -14,7 +14,6 @@ requirements:
     - python
     - pandas
     - pywin32
-    - configparser
 
 about:
   home: https://github.com/mullenkamp/hilltop-py
