@@ -15,6 +15,10 @@ requirements:
     - pandas
     - pywin32
 
+test:
+  imports:
+    - hilltoppy
+
 about:
   home: https://github.com/mullenkamp/hilltop-py
   license: Apache License 2.0
