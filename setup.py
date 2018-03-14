@@ -32,7 +32,7 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name='project_template',  # Required
+    name='hilltop-py',  # Required
 
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
@@ -40,12 +40,12 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.0.2',  # Required
+    version='1.0.0',  # Required
 
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='A Python project template',  # Required
+    description='Functions to extract data from Hilltop',  # Required
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -61,7 +61,7 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url='https://github.com/mullenkamp/project_template',  # Optional
+    url='https://github.com/mullenkamp/hilltop-py',  # Optional
 
     # This should be your name or the name of the organization which owns the
     # project.
@@ -103,7 +103,7 @@ setup(
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='sample template development',  # Optional
+    keywords='hilltop',  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
@@ -115,7 +115,7 @@ setup(
     #   py_modules=["my_module"],
     #
     # packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
-    packages=['sample'],
+    packages=['hilltoppy'],
 
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
@@ -123,7 +123,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['pandas'],  # Optional
+    install_requires=['pandas', 'pywin32', 'ConfigParser'],  # Optional
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -143,9 +143,9 @@ setup(
     #
     # If using Python 2.6 or earlier, then these have to be included in
     # MANIFEST.in as well.
-    package_data={  # Optional
-        'sample': ['package_data.dat'],
-    },
+#    package_data={  # Optional
+#        'sample': ['package_data.dat'],
+#    },
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
@@ -161,9 +161,9 @@ setup(
     #
     # For example, the following would provide a command called `sample` which
     # executes the function `main` from this package when invoked:
-    entry_points={  # Optional
-       'console_scripts': [
-           'sample=sample.command_line:t3',
-       ],
-    },
+#    entry_points={  # Optional
+#       'console_scripts': [
+#           'sample=sample.command_line:t3',
+#       ],
+#    },
 )

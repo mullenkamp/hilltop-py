@@ -1,10 +1,10 @@
 package:
-  name: project_template
+  name: hilltop-py
   version: "1.0.0"
 
 source:
-  git_rev: 1.0.2
-  git_url: https://github.com/mullenkamp/project_template.git
+  git_rev: 1.0.0
+  git_url: https://github.com/mullenkamp/hilltop-py.git
 
 requirements:
   build:
@@ -13,12 +13,10 @@ requirements:
   run:
     - python
     - pandas
-
-test:
-  imports:
-    - project_template
+    - pywin32
+    - ConfigParser
 
 about:
-  home: https://github.com/mullenkamp/project_template
+  home: https://github.com/mullenkamp/hilltop-py
   license: Apache License 2.0
   license_file: LICENSE
