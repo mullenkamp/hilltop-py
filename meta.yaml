@@ -1,10 +1,10 @@
 package:
-  name: hilltop-py
-  version: "1.0.3"
+  name: hilltoppy
+  version: "1.0.4"
 
 source:
-  git_rev: 1.0.3
-  git_url: https://github.com/mullenkamp/hilltop-py.git
+  git_rev: 1.0.4
+  git_url: https://github.com/mullenkamp/hilltoppy.git
 
 requirements:
   build:
@@ -20,6 +20,6 @@ test:
     - hilltoppy
 
 about:
-  home: https://github.com/mullenkamp/hilltop-py
+  home: https://github.com/mullenkamp/hilltoppy
   license: Apache License 2.0
   license_file: LICENSE
