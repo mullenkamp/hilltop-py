@@ -1,0 +1,24 @@
+package:
+  name: project_template
+  version: "1.0.0"
+
+source:
+  git_rev: 1.0.2
+  git_url: https://github.com/mullenkamp/project_template.git
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - pandas
+
+test:
+  imports:
+    - project_template
+
+about:
+  home: https://github.com/mullenkamp/project_template
+  license: Apache License 2.0
+  license_file: LICENSE
