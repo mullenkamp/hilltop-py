@@ -1,0 +1,41 @@
+{% set name = "hilltop-py" %}
+{% set version = "1.0.7" %}
+{% set file_ext = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash_value = "5c05fb4beaaf5239b3411996895aaa631f40e1e69af2e5ec45b07f76c16fe6da" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  fn: '{{ name }}-{{ version }}.{{ file_ext }}'
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ file_ext }}
+  '{{ hash_type }}': '{{ hash_value }}'
+
+build:
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - pandas
+    - pywin32
+
+test:
+  imports:
+    - hilltoppy
+
+about:
+  home: https://github.com/mullenkamp/hilltop-py
+  license: Apache License 2.0
+  license_family: APACHE
+  summary: Functions to extract data from Hilltop
+  description: "Repository for ECan freshwater reports\r\n=============================================================\r\n\r\nThis git repository contains the documentation for the ECan freshwater reports.\r\
+    \n"
+  doc_url: ''
+  dev_url: ''

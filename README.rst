@@ -1,4 +1,4 @@
-Repository for ECan freshwater reports
+Repository for Hilltop Python tools
 =============================================================
 
-This git repository contains the documentation for the ECan freshwater reports.
+This git repository contains the Hilltop Python tools and associated documentation.
