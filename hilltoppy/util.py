@@ -158,6 +158,8 @@ def proc_ht_use_data(ht_data, n_std=4):
             outliers = abs(data - data.mean()) > (data.std() * n_std)
             data.loc[outliers] = np.nan
             vol = (data * 24).fillna(method='ffill').round(4)
+        else:
+            continue
 
         res1.append(vol)
 
