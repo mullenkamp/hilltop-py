@@ -182,7 +182,7 @@ def rd_ht_quan_data(hts, sites=None, mtypes=None, start=None, end=None, agg_peri
                 continue
             if (start is None):
                 if (agg_period is not None):
-                    start1 = str(to_datetime(start_time).ceil(str(agg_n) + time_switch(agg_period)).date())
+                    start1 = str(to_datetime(start_time).ceil(str(agg_n) + time_switch(agg_period)))
                 else:
                     start1 = dfile.DataStartTime
             else:

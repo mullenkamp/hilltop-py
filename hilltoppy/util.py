@@ -105,7 +105,7 @@ def convert_site_names(names, rem_m=True):
     return names2
 
 
-def proc_ht_use_data(ht_data, n_std=4):
+def proc_ht_use_data(ht_data):
     """
     Function to process the water usage data at daily resolution.
     """
@@ -130,33 +130,16 @@ def proc_ht_use_data(ht_data, n_std=4):
             neg_index = diff1 < 0
             neg_ratio = sum(neg_index.values)/count1
             if neg_ratio > 0.1:
-                outliers = abs(data - data.mean()) > (data.std() * n_std)
-                data[outliers] = np.nan
                 vol = data
             else:
                 # Replace the negative values with zero and the very large values
                 diff1[diff1 < 0] = data[diff1 < 0]
-                outliers = abs(diff1 - diff1.mean()) > (diff1.std() * n_std)
-                diff1.loc[outliers] = np.nan
                 vol = diff1
         elif mtype in ['Compliance Volume', 'Volume']:
-            outliers = abs(data - data.mean()) > (data.std() * n_std)
-            data.loc[outliers] = np.nan
             vol = data
         elif mtype == 'Flow':
-            outliers = abs(data - data.mean()) > (data.std() * n_std)
-            data.loc[outliers] = np.nan
-
-#            # Determine the diff index
-#            t1 = Series(data.index).diff().dt.seconds.shift(-1)
-#            t1.iloc[-1] = t1.iloc[-2]
-#            t1.index = data.index
-#            # Convert to volume
-#            vol = data.multiply(t1, axis=0) * 0.001
             vol = (data * 60*60*24).fillna(method='ffill').round(4)
         elif mtype == 'Average Flow':
-            outliers = abs(data - data.mean()) > (data.std() * n_std)
-            data.loc[outliers] = np.nan
             vol = (data * 24).fillna(method='ffill').round(4)
         else:
             continue
