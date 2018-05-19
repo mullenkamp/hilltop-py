@@ -11,7 +11,7 @@ from hilltoppy.util import pytime_to_datetime, time_switch
 #### New method - not ready yet...
 
 
-def ht_sites(hts, sites=None):
+def get_sites_mtypes(hts, sites=None):
     """
     Function to read all of the sites in an hts file and the associated site info.
 
@@ -59,7 +59,7 @@ def ht_sites(hts, sites=None):
     return site_info
 
 
-def ht_get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_method='Average', agg_n=1, agg_period='day', output_missing_sites=False, site_info=None):
+def get_tsdata(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_method='Average', agg_n=1, agg_period='day', output_missing_sites=False, site_info=None):
     """
     Function to read water quantity data from an hts file.
 
@@ -84,7 +84,7 @@ def ht_get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_
     output_site_data : bool
         Should the sites data be output?
     sites_info : DataFrame
-        The DataFrame return from the ht_sites function. If this is passed than ht_sites is not run.
+        The DataFrame return from the get_sites_mtypes function. If this is passed than get_sites_mtypes is not run.
 
     Returns
     -------
@@ -92,7 +92,7 @@ def ht_get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_
     """
 
     if not isinstance(site_info, pd.DataFrame):
-        site_info = ht_sites(hts, sites=sites)
+        site_info = get_sites_mtypes(hts, sites=sites)
 
     if isinstance(mtypes, list):
         site_info = site_info[site_info['Measurement'].isin(mtypes)]
@@ -116,7 +116,6 @@ def ht_get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_
 
     ## Extract the ts data
     data1 = []
-    missing_site_data = pd.DataFrame()
 
     dfile1 = Hilltop.Connect(hts)
     for i in site_info.index:
@@ -125,10 +124,15 @@ def ht_get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_
         start = site_info.loc[i, 'Start Time']
         end = site_info.loc[i, 'End Time']
 
-        d1 = Hilltop.GetData(dfile1, site, mtype, start, end, method=agg_method, interval=ht_interval, alignment='00:00')
+        try:
+            d1 = Hilltop.GetData(dfile1, site, mtype, start, end, method=agg_method, interval=ht_interval, alignment='00:00')
+        except Exception as err:
+            err1 = err
+            print(err1)
+            print('Extraction failed for site ' + str(site) + ' and mtype ' + str(mtype))
+            continue
 
         if d1.empty:
-            missing_site_data = pd.concat([missing_site_data, site_info.loc[i]])
             print('No data for site ' + str(site) + ' and mtype ' + str(mtype))
             continue
 
@@ -139,20 +143,13 @@ def ht_get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_
         d2 = d1.reset_index()
         d2.loc[:, 'site'] = site
         d2.loc[:, 'mtype'] = mtype
-        print(site, mtype)
 
         data1.append(d2)
 
     try:
         data2 = pd.concat(data1).set_index(['mtype', 'site', 'time']).data
     except MemoryError:
-        print('Not enough memory for a 32bit application')
+        print('Not enough RAM memory')
 
-    if missing_site_data.empty:
-        print('No missing data for any sites/mtypes')
-    else:
-        print('No data for ' + str(len(missing_site_data)) + ' sites/mtype combos')
-        if output_missing_sites:
-            return(data2, missing_site_data)
     return data2
 
