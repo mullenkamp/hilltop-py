@@ -123,7 +123,7 @@ def proc_ht_use_data(ht_data):
 
         data[data < 0] = np.nan
 
-        if mtype == 'Water Meter [Water Meter]':
+        if mtype == 'Water Meter':
             ## Check to determine whether it is cumulative or period volume
             count1 = float(data.count())
             diff1 = data.diff()
@@ -135,11 +135,11 @@ def proc_ht_use_data(ht_data):
                 # Replace the negative values with zero and the very large values
                 diff1[diff1 < 0] = data[diff1 < 0]
                 vol = diff1
-        elif mtype in ['Compliance Volume [Abstraction Volume]', 'Volume [Flow]']:
+        elif mtype in ['Compliance Volume', 'Volume']:
             vol = data
-        elif mtype == 'Flow [Flow]':
+        elif mtype == 'Flow':
             vol = (data * 60*60*24).fillna(method='ffill').round(4)
-        elif mtype == 'Average Flow [Average Flow]':
+        elif mtype == 'Average Flow':
             vol = (data * 24).fillna(method='ffill').round(4)
         else:
             continue

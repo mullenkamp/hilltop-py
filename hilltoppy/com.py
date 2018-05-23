@@ -206,7 +206,7 @@ def rd_ht_quan_data(hts, sites=None, mtypes=None, start=None, end=None, agg_peri
                 else:
                     data.append(t1)
                     time.append(str(pytime_to_datetime(dfile.time)))
-                    while dfile.getsinglevbs == 0:
+                    while dfile.getsinglevbs != 2:
                         data.append(dfile.value)
                         time.append(str(pytime_to_datetime(dfile.time)))
                     if data:
