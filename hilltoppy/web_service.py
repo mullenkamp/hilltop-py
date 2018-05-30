@@ -158,6 +158,9 @@ def measurement_list(base_url, hts, site, measurement=None):
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     data_sources = tree1.findall('DataSource')
+    if not data_sources:
+        print('No data, returning empty DataFrame')
+        return pd.DataFrame()
 
     ### Extract data into DataFrame
     data_list = []
@@ -255,6 +258,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, loc
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     meas1 = tree1.find('Measurement')
+    if not meas1:
+        print('No data, returning empty DataFrame')
+        return pd.DataFrame()
     data1 = meas1.find('Data')
     es1 = data1.getchildren()
 
@@ -264,6 +270,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, loc
         for d in es1:
             time1 = d.find('T').text
             params1 = d.findall('Parameter')
+            if not params1:
+                continue
             p_dict = {i.attrib['Name']: i.attrib['Value'][:299] for i in params1}
             tsdata_dict.update({time1: p_dict})
         data_df = pd.DataFrame.from_dict(tsdata_dict, orient='index').stack().reset_index()
@@ -339,6 +347,9 @@ def wq_sample_parameter_list(base_url, hts, site):
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     meas1 = tree1.find('Measurement')
+    if not meas1:
+        print('No data, returning empty DataFrame')
+        return pd.DataFrame()
     data1 = meas1.find('Data')
     es1 = data1.getchildren()
 
@@ -347,6 +358,8 @@ def wq_sample_parameter_list(base_url, hts, site):
     p_set = set()
     for d in es1:
         params1 = d.findall('Parameter')
+        if not params1:
+            continue
         p_tup = tuple(i.attrib['Name'] for i in params1)
         tsdata_dict[d.find('T').text] = p_tup
         p_set.update(set(p_tup))
