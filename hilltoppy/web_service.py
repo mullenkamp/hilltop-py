@@ -13,7 +13,6 @@ except ImportError:
     except ImportError:
         import xml.etree.ElementTree as ET
 import requests
-import urllib
 import pandas as pd
 import numpy as np
 
@@ -74,22 +73,22 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
 
     ### Ready the others
     if isinstance(site, (int, float, str)):
-        url = url + '&Site=' + urllib.parse.quote(str(site))
+        url = url + '&Site=' + requests.utils.quote(str(site))
     if isinstance(measurement, str):
-        url = url + '&Measurement=' + urllib.parse.quote(measurement)
+        url = url + '&Measurement=' + requests.utils.quote(measurement)
 #    if isinstance(collection, str):
-#        url = url + '&Collection=' + urllib.parse.quote(collection)
+#        url = url + '&Collection=' + requests.utils.quote(collection)
     if isinstance(site_parameters, list):
-        url = url + '&SiteParameters=' + urllib.parse.quote(','.join(site_parameters))
+        url = url + '&SiteParameters=' + requests.utils.quote(','.join(site_parameters))
     if location and (request == 'SiteList'):
         url = url + '&Location=Yes'
 
     ### Time interval goes last!
     if request == 'GetData':
         if isinstance(agg_method, str):
-            url = url + '&Method=' + urllib.parse.quote(agg_method)
+            url = url + '&Method=' + requests.utils.quote(agg_method)
         if isinstance(agg_interval, str):
-            url = url + '&Interval=' + urllib.parse.quote(agg_interval)
+            url = url + '&Interval=' + requests.utils.quote(agg_interval)
         if isinstance(from_date, str):
             url = url + '&TimeInterval=' + from_date
         else:
@@ -166,10 +165,17 @@ def measurement_list(base_url, hts, site, measurement=None):
     data_list = []
 
     for d in data_sources:
+        tstype = d.find('TSType')
+        if tstype is None:
+            pass
+        elif d.find('TSType').text != 'StdSeries':
+            continue
         ds_dict = {c.tag: c.text for c in d if c.tag in ds_types}
-        m = d.find('Measurement')
-        ds_dict.update({c.tag: c.text for c in m if c.tag in m_types})
-        data_list.append(ds_dict)
+        m_all = d.findall('Measurement')
+        for m in m_all:
+            m_dict = {c.tag: c.text for c in m if c.tag in m_types}
+            m_dict.update(ds_dict)
+            data_list.append(m_dict)
 
     mtype_df = pd.DataFrame(data_list)
     if not mtype_df.empty:
@@ -178,8 +184,8 @@ def measurement_list(base_url, hts, site, measurement=None):
             mtype_df.To = pd.to_datetime(mtype_df.To, infer_datetime_format=True)
         if 'From' in mtype_df.columns:
             mtype_df.From = pd.to_datetime(mtype_df.From, infer_datetime_format=True)
-        if 'DataType' in mtype_df.columns:
-            mtype_df.loc[mtype_df.Measurement == 'WQ Sample', 'DataType'] = 'WQSample'
+#        if 'DataType' in mtype_df.columns:
+#            mtype_df.loc[mtype_df.Measurement == 'WQ Sample', 'DataType'] = 'WQSample'
         if 'Units' in mtype_df.columns:
             mtype_df = mtype_df.replace({'Units': {'%': np.nan}}).copy()
         mtype_df['Site'] = site
@@ -217,7 +223,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, location=False, interp_method=None, interp_interval=None, parameters=False):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, parameters=False):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -250,7 +256,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, loc
         If parameters is False, then only one DataFrame is returned indexed by Site, Measurement, and DateTime. If parameters is True, then two DataFrames are returned. The first is the same as if parameters is False, but the second contains those additional parameters indexed by Site, Measurement, DateTime, and Parameter.
     """
     ### Make url
-    url = build_url(base_url, hts, 'GetData', site, measurement, from_date, to_date, location, interp_method, interp_interval)
+    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval)
 
     ### Request data and load in xml
     resp = requests.get(url)
@@ -258,9 +264,10 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, loc
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     meas1 = tree1.find('Measurement')
-    if not meas1:
+    if meas1 is None:
         print('No data, returning empty DataFrame')
         return pd.DataFrame()
+    datatype = meas1.find('DataSource').find('DataType').text
     data1 = meas1.find('Data')
     es1 = data1.getchildren()
 
@@ -276,26 +283,34 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, loc
             tsdata_dict.update({time1: p_dict})
         data_df = pd.DataFrame.from_dict(tsdata_dict, orient='index').stack().reset_index()
         data_df.columns = ['DateTime', 'Parameter', 'Value']
-    elif parameters:
+    elif datatype == 'WQData':
+        if parameters:
+            tsdata_list = []
+            tsextra_dict = {}
+            for d in es1:
+                time1 = d.find('T').text
+                value1 = d.find('Value').text
+                params1 = d.findall('Parameter')
+                if params1:
+                    p_dict = {i.attrib['Name']: i.attrib['Value'][:299] for i in params1}
+                    tsextra_dict.update({time1: p_dict})
+                tsdata_list.append([time1, value1])
+            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
+            if tsextra_dict:
+                extra_df = pd.DataFrame.from_dict(tsextra_dict, orient='index').stack().reset_index()
+                extra_df.columns = ['DateTime', 'Parameter', 'Value']
+        else:
+            tsdata_list = []
+            for d in es1:
+                tsdata_list.append([d.find('T').text, d.find('Value').text])
+            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
+    elif datatype == 'SimpleTimeSeries':
         tsdata_list = []
-        tsextra_dict = {}
         for d in es1:
-            time1 = d.find('T').text
-            value1 = d.find('Value').text
-            params1 = d.findall('Parameter')
-            if params1:
-                p_dict = {i.attrib['Name']: i.attrib['Value'][:299] for i in params1}
-                tsextra_dict.update({time1: p_dict})
-            tsdata_list.append([time1, value1])
+            tsdata_list.append([d.find('T').text, d.find('I1').text])
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
-        if tsextra_dict:
-            extra_df = pd.DataFrame.from_dict(tsextra_dict, orient='index').stack().reset_index()
-            extra_df.columns = ['DateTime', 'Parameter', 'Value']
-    else:
-        tsdata_list = []
-        for d in es1:
-            tsdata_list.append([d.find('T').text, d.find('Value').text])
-        data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
+        data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')
+
 
     ### Add in additional columns and convert DateTime
     data_df['DateTime'] = pd.to_datetime(data_df['DateTime'], infer_datetime_format=True)
@@ -306,7 +321,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, loc
         data_df['Measurement'] = measurement
         data_df = data_df.set_index(['Site', 'Measurement', 'DateTime'])
 
-    if parameters:
+    if (parameters) & (datatype == 'WQData'):
         if tsextra_dict:
             extra_df['DateTime'] = pd.to_datetime(extra_df['DateTime'], infer_datetime_format=True)
             extra_df['Measurement'] = measurement
@@ -347,7 +362,7 @@ def wq_sample_parameter_list(base_url, hts, site):
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     meas1 = tree1.find('Measurement')
-    if not meas1:
+    if meas1 is None:
         print('No data, returning empty DataFrame')
         return pd.DataFrame()
     data1 = meas1.find('Data')
