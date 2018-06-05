@@ -330,7 +330,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
             return data_df, extra_df
         else:
-            return data_df, pd.DataFrame()
+            extra_df = pd.DataFrame(columns=['Site', 'Measurement', 'Parameter', 'DateTime', 'Value'])
+            extra_df = extra_df.set_index(['Site', 'Measurement', 'Parameter', 'DateTime'])
+            return data_df, extra_df
     else:
         return data_df
 
