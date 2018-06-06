@@ -301,12 +301,26 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 extra_df.columns = ['DateTime', 'Parameter', 'Value']
         else:
             tsdata_list = []
+            gap = 0
             for d in es1:
+                tag1 = d.tag
+                if tag1 == 'Gap':
+                    gap = gap + 1
+                    continue
+                if gap % 2 == 1:
+                    continue
                 tsdata_list.append([d.find('T').text, d.find('Value').text.encode('ascii', 'ignore').decode()])
             data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
-    elif datatype == 'SimpleTimeSeries':
+    elif datatype in ['SimpleTimeSeries', 'MeterReading']:
         tsdata_list = []
+        gap = 0
         for d in es1:
+            tag1 = d.tag
+            if tag1 == 'Gap':
+                gap = gap + 1
+                continue
+            if gap % 2 == 1:
+                continue
             tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode()])
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
         data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')

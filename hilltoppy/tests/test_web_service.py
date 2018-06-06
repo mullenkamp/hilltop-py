@@ -44,10 +44,10 @@ sample_param_df = pd.concat(sample_param_list)
 ### Usage
 base_url = 'http://wateruse.ecan.govt.nz'
 hts = 'WaterUse.hts'
-site = 'M36/20310-M1'
-measurement = 'Compliance Volume'
+site = 'L36/1764-M1'
+measurement = 'Water Meter'
 from_date = '2015-01-01'
-to_date = '2017-01-01'
+to_date = '2018-05-01'
 agg_method='Total'
 agg_interval='1 day'
 
