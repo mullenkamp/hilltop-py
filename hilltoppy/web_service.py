@@ -170,10 +170,10 @@ def measurement_list(base_url, hts, site, measurement=None):
             pass
         elif d.find('TSType').text != 'StdSeries':
             continue
-        ds_dict = {c.tag: c.text for c in d if c.tag in ds_types}
+        ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in d if c.tag in ds_types}
         m_all = d.findall('Measurement')
         for m in m_all:
-            m_dict = {c.tag: c.text for c in m if c.tag in m_types}
+            m_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in m if c.tag in m_types}
             m_dict.update(ds_dict)
             data_list.append(m_dict)
 
@@ -279,7 +279,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             params1 = d.findall('Parameter')
             if not params1:
                 continue
-            p_dict = {i.attrib['Name']: i.attrib['Value'][:299] for i in params1}
+            p_dict = {i.attrib['Name'].encode('ascii', 'ignore').decode(): i.attrib['Value'][:299].encode('ascii', 'ignore').decode() for i in params1}
             tsdata_dict.update({time1: p_dict})
         data_df = pd.DataFrame.from_dict(tsdata_dict, orient='index').stack().reset_index()
         data_df.columns = ['DateTime', 'Parameter', 'Value']
@@ -289,10 +289,10 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             tsextra_dict = {}
             for d in es1:
                 time1 = d.find('T').text
-                value1 = d.find('Value').text
+                value1 = d.find('Value').text.encode('ascii', 'ignore').decode()
                 params1 = d.findall('Parameter')
                 if params1:
-                    p_dict = {i.attrib['Name']: i.attrib['Value'][:299] for i in params1}
+                    p_dict = {i.attrib['Name'].encode('ascii', 'ignore').decode(): i.attrib['Value'][:299].encode('ascii', 'ignore').decode() for i in params1}
                     tsextra_dict.update({time1: p_dict})
                 tsdata_list.append([time1, value1])
             data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
@@ -302,12 +302,12 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         else:
             tsdata_list = []
             for d in es1:
-                tsdata_list.append([d.find('T').text, d.find('Value').text])
+                tsdata_list.append([d.find('T').text, d.find('Value').text.encode('ascii', 'ignore').decode()])
             data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
     elif datatype == 'SimpleTimeSeries':
         tsdata_list = []
         for d in es1:
-            tsdata_list.append([d.find('T').text, d.find('I1').text])
+            tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode()])
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
         data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')
 
@@ -377,7 +377,7 @@ def wq_sample_parameter_list(base_url, hts, site):
         params1 = d.findall('Parameter')
         if not params1:
             continue
-        p_tup = tuple(i.attrib['Name'] for i in params1)
+        p_tup = tuple(i.attrib['Name'].encode('ascii', 'ignore').decode() for i in params1)
         tsdata_dict[d.find('T').text] = p_tup
         p_set.update(set(p_tup))
     p_t_dict = {p: tuple(i for i, k in tsdata_dict.items() if p in k) for p in p_tup}
