@@ -5,13 +5,13 @@ Created on Tue May 29 10:12:11 2018
 @author: MichaelEK
 """
 
+#try:
+#    from lxml import etree as ET
+#except ImportError:
 try:
-    from lxml import etree as ET
+    import xml.etree.cElementTree as ET
 except ImportError:
-    try:
-        import xml.etree.cElementTree as ET
-    except ImportError:
-        import xml.etree.ElementTree as ET
+    import xml.etree.ElementTree as ET
 import requests
 import pandas as pd
 import numpy as np
