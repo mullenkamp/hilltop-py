@@ -20,7 +20,7 @@ sites = site_list(base_url, hts)
 mtype_df1 = measurement_list(base_url, hts, site)
 
 mtypes_list = []
-for s in sites:
+for s in sites[:10]:
     mtype_df1 = measurement_list(base_url, hts, s)
     mtypes_list.append(mtype_df1)
 mtypes_all = pd.concat(mtypes_list)
@@ -34,7 +34,7 @@ tsdata2, extra2 = get_data(base_url, hts, site, measurement, parameters=True)
 tsdata3 = get_data(base_url, hts, site, 'WQ Sample')
 
 sample_param_list = []
-for s in sites:
+for s in sites[:10]:
     site_sample_param = wq_sample_parameter_list(base_url, hts, s)
     sample_param_list.append(site_sample_param)
 
