@@ -24,7 +24,7 @@ available_requests = ['SiteList', 'MeasurementList', 'GetData']
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=False, site_parameters=None, agg_method=None, agg_interval=None):
+def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=False, site_parameters=None, agg_method=None, agg_interval=None, alignment=None):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -97,6 +97,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
             url = url + '/' + to_date
         else:
             url = url + '/now'
+        if isinstance(alignment, str):
+            url = url + '&Alignment=' + alignment
 
     ### return
     return url
@@ -181,14 +183,21 @@ def measurement_list(base_url, hts, site, measurement=None):
     if not mtype_df.empty:
         mtype_df.rename(columns={'RequestAs': 'Measurement'}, inplace=True)
         if 'To' in mtype_df.columns:
-            mtype_df.To = pd.to_datetime(mtype_df.To, infer_datetime_format=True)
+            mtype_df.To = pd.to_datetime(mtype_df.To, infer_datetime_format=True, errors='coerce')
         if 'From' in mtype_df.columns:
-            mtype_df.From = pd.to_datetime(mtype_df.From, infer_datetime_format=True)
+            mtype_df.From = pd.to_datetime(mtype_df.From, infer_datetime_format=True, errors='coerce')
 #        if 'DataType' in mtype_df.columns:
 #            mtype_df.loc[mtype_df.Measurement == 'WQ Sample', 'DataType'] = 'WQSample'
         if 'Units' in mtype_df.columns:
             mtype_df = mtype_df.replace({'Units': {'%': np.nan}}).copy()
         mtype_df['Site'] = site
+
+        bad_sites = mtype_df[mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today())]
+
+        if not bad_sites.empty:
+            print('There are ' + str(len(bad_sites)) + ' sites with bad times')
+            print(bad_sites)
+            mtype_df = mtype_df[~(mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today()))]
 
         return mtype_df.set_index(['Site', 'Measurement'])
     else:
@@ -223,7 +232,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, parameters=False):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -256,7 +265,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         If parameters is False, then only one DataFrame is returned indexed by Site, Measurement, and DateTime. If parameters is True, then two DataFrames are returned. The first is the same as if parameters is False, but the second contains those additional parameters indexed by Site, Measurement, DateTime, and Parameter.
     """
     ### Make url
-    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval)
+    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment)
 
     ### Request data and load in xml
     resp = requests.get(url)

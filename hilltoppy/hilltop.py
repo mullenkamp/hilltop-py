@@ -149,7 +149,7 @@ def get_tsdata(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_m
     try:
         data2 = pd.concat(data1).set_index(['mtype', 'site', 'time']).data
     except MemoryError:
-        print('Not enough RAM memory')
+        print('Not enough RAM')
 
     return data2
 

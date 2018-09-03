@@ -111,7 +111,7 @@ def proc_ht_use_data(ht_data):
     """
 
     ### Groupby mtypes and sites
-    grp = ht_data.groupby(level=['mtype', 'site'])
+    grp = ht_data.groupby(level=['Measurement', 'Site'])
 
     res1 = []
     for index, data1 in grp:
@@ -138,9 +138,11 @@ def proc_ht_use_data(ht_data):
         elif mtype in ['Compliance Volume', 'Volume']:
             vol = data
         elif mtype == 'Flow':
-            vol = (data * 60*60*24).fillna(method='ffill').round(4)
+#            vol = (data * 60*60*24).fillna(method='ffill').round(4)
+            vol = (data * 60*60*24)
         elif mtype == 'Average Flow':
-            vol = (data * 24).fillna(method='ffill').round(4)
+#            vol = (data * 24).fillna(method='ffill').round(4)
+            vol = (data * 24)
         else:
             continue
 
@@ -150,10 +152,10 @@ def proc_ht_use_data(ht_data):
     df1 = pd.concat(res1).reset_index()
 
     ### Drop the mtypes level and uppercase the sites
-    df2 = df1.drop('mtype', axis=1)
-    df2.loc[:, 'site'] = df2.loc[:, 'site'].str.upper()
+    df2 = df1.drop('Measurement', axis=1)
+    df2.loc[:, 'Site'] = df2.loc[:, 'Site'].str.upper()
 
     ### Remove duplicate WAPs
-    df3 = df2.groupby(['site', 'time']).data.last()
+    df3 = df2.groupby(['Site', 'DateTime']).Value.last()
 
     return df3
