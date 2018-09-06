@@ -105,6 +105,62 @@ def convert_site_names(names, rem_m=True):
     return names2
 
 
+def proc_ht_use_data_ws(ht_data):
+    """
+    Function to process the water usage data at daily resolution.
+    """
+
+    ### Groupby mtypes and sites
+    grp = ht_data.groupby(level=['Measurement', 'Site'])
+
+    res1 = []
+    for index, data1 in grp:
+        data = data1.copy()
+        mtype, site = index
+#        units = sites[(sites.site == site) & (sites.mtype == mtype)].unit
+
+        ### Select the process sequence based on the mtype and convert to period volume
+
+        data[data < 0] = np.nan
+
+        if mtype == 'Water Meter':
+            ## Check to determine whether it is cumulative or period volume
+            count1 = float(data.count())
+            diff1 = data.diff()
+            neg_index = diff1 < 0
+            neg_ratio = sum(neg_index.values)/count1
+            if neg_ratio > 0.1:
+                vol = data
+            else:
+                # Replace the negative values with zero and the very large values
+                diff1[diff1 < 0] = data[diff1 < 0]
+                vol = diff1
+        elif mtype in ['Compliance Volume', 'Volume']:
+            vol = data
+        elif mtype == 'Flow':
+#            vol = (data * 60*60*24).fillna(method='ffill').round(4)
+            vol = (data * 60*60*24)
+        elif mtype == 'Average Flow':
+#            vol = (data * 24).fillna(method='ffill').round(4)
+            vol = (data * 24)
+        else:
+            continue
+
+        res1.append(vol)
+
+    ### Convert to dataframe
+    df1 = pd.concat(res1).reset_index()
+
+    ### Drop the mtypes level and uppercase the sites
+    df2 = df1.drop('Measurement', axis=1)
+    df2.loc[:, 'Site'] = df2.loc[:, 'Site'].str.upper()
+
+    ### Remove duplicate WAPs
+    df3 = df2.groupby(['Site', 'DateTime']).Value.last()
+
+    return df3
+
+
 def proc_ht_use_data(ht_data):
     """
     Function to process the water usage data at daily resolution.
