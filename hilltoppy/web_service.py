@@ -127,7 +127,7 @@ def site_list(base_url, hts):
     return sites
 
 
-def measurement_list(base_url, hts, site, measurement=None):
+def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=False):
     """
     Function to query a Hilltop server for the measurement summary of a site.
 
@@ -141,11 +141,14 @@ def measurement_list(base_url, hts, site, measurement=None):
         The site to be extracted.
     measurement : str or None
         The measurement type name.
+    output_bad_sites : bool
+        Should sites with problems be returned?
 
     Returns
     -------
     DataFrame
-        indexed by Site and Measurement
+        indexed by Site and Measurement.
+        If output_bad_sites is True than two DataFrames are returned.
     """
     ds_types = ['DataType', 'From', 'To', 'SensorGroup']
     m_types = ['RequestAs', 'Units']
@@ -163,12 +166,21 @@ def measurement_list(base_url, hts, site, measurement=None):
         print('No data, returning empty DataFrame')
         return pd.DataFrame()
 
+    ### Test to see if the site only has a WQ Sample and no other measurment
+    if len(data_sources) == 1:
+        d = data_sources[0]
+        if d.attrib['Name'] == 'WQ Sample':
+            print('Site only has WQ Sample')
+            if output_bad_sites:
+                return pd.DataFrame(), pd.DataFrame()
+            else:
+                return pd.DataFrame()
+
     ### Extract data into DataFrame
     data_list = []
 
     for d in data_sources:
-        tstype = d.find('TSType')
-        if tstype is None:
+        if d.find('TSType') is None:
             pass
         elif d.find('TSType').text != 'StdSeries':
             continue
@@ -186,22 +198,28 @@ def measurement_list(base_url, hts, site, measurement=None):
             mtype_df.To = pd.to_datetime(mtype_df.To, infer_datetime_format=True, errors='coerce')
         if 'From' in mtype_df.columns:
             mtype_df.From = pd.to_datetime(mtype_df.From, infer_datetime_format=True, errors='coerce')
-#        if 'DataType' in mtype_df.columns:
-#            mtype_df.loc[mtype_df.Measurement == 'WQ Sample', 'DataType'] = 'WQSample'
         if 'Units' in mtype_df.columns:
             mtype_df = mtype_df.replace({'Units': {'%': np.nan}}).copy()
         mtype_df['Site'] = site
 
-        bad_sites = mtype_df[mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today())]
+        if output_bad_sites:
+            bad_sites = mtype_df[mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today())]
 
-        if not bad_sites.empty:
-            print('There are ' + str(len(bad_sites)) + ' sites with bad times')
-            print(bad_sites)
-            mtype_df = mtype_df[~(mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today()))]
+            if bad_sites.empty:
+                return mtype_df.set_index(['Site', 'Measurement']), pd.DataFrame()
+            else:
+                print('There are ' + str(len(bad_sites)) + ' sites with bad times')
+    #            print(bad_sites)
+                mtype_df = mtype_df[~(mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today()))]
+                return mtype_df.set_index(['Site', 'Measurement']), bad_sites
+        else:
+            return mtype_df.set_index(['Site', 'Measurement'])
 
-        return mtype_df.set_index(['Site', 'Measurement'])
     else:
-        return None
+        if output_bad_sites:
+            return pd.DataFrame(), pd.DataFrame()
+        else:
+            return pd.DataFrame()
 
 
 def measurement_list_all(base_url, hts):

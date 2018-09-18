@@ -12,6 +12,7 @@ import re
 base_url = 'http://wateruse.ecan.govt.nz'
 hts = 'WQAll.hts'
 site = 'BV24/0024'
+site2 = 'SQ34392'
 measurement = 'Nitrate Nitrogen'
 from_date = '2015-01-01'
 to_date = '2017-01-01'
