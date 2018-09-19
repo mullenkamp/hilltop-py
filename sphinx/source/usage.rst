@@ -9,9 +9,18 @@ COM module
 ------------
 The following documentation describes how to set up and use the COM module functions.
 
+Install pywin32
+~~~~~~~~~~~~~~~
+pywin32 does not come installed by default. Install it like any other python package before continuing.
+
+.. code::
+
+  conda install pywin32
+
+
 Register Hydrolib
 ~~~~~~~~~~~~~~~~~
-First, Hilltop Manager needs to be added into the Windows registry. This can be done for either the 32bit or the 64bit versions of Hilltop Manager, but if you have the choice pick the 64bit version in case you need to handle very large datasets. Find either version of Hilltop Manager,  and open the program (called Manager.exe). Load in an hts file (this allows you to access the configuration menus). Go to the tab called ‘Configure’ then go to ‘installation’. It will ask you if you want Hilltop registered, and of course say yes. That’s all for the first part.
+Hilltop Manager needs to be added into the Windows registry. This can be done for either the 32bit or the 64bit versions of Hilltop Manager, but if you have the choice pick the 64bit version in case you need to handle very large datasets. Find either version of Hilltop Manager,  and open the program (called Manager.exe). Load in an hts file (this allows you to access the configuration menus). Go to the tab called ‘Configure’ then go to ‘installation’. It will ask you if you want Hilltop registered, and of course say yes.
 
 Run makepy_hilltop
 ~~~~~~~~~~~~~~~~~~

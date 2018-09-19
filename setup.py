@@ -10,7 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 name = 'hilltop-py'
 main_package = 'hilltoppy'
 # datasets = 'datasets'
-version = '1.2.1'
+version = '1.2.2'
 descrip = 'Functions to access Hilltop data'
 
 # The below code is for readthedocs. To have sphinx/readthedocs interact with
@@ -19,7 +19,7 @@ descrip = 'Functions to access Hilltop data'
 if os.environ.get('READTHEDOCS', False) == 'True':
     INSTALL_REQUIRES = []
 else:
-    INSTALL_REQUIRES = ['pandas', 'pywin32', 'requests']
+    INSTALL_REQUIRES = ['pandas', 'requests']
 
 # Get the long description from the README file
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
