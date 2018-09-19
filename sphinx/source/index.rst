@@ -4,7 +4,7 @@ This package contains a variety of Python functions for accessing data contained
 You must have the Hilltop software to use this package.
 
 There are three different modules to access Hilltop data::
-  - windows COM objects
+  - Windows COM objects
   - Native Hilltop Python package
   - Hilltop web server
 
