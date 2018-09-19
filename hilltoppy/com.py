@@ -3,7 +3,10 @@
 Hilltop read functions for COM connection.
 Hilltop uses a fixed base date as 1940-01-01, while the standard unix/POSIT base date is 1970-01-01.
 """
-from win32com.client import Dispatch, pywintypes, makepy
+try:
+    from win32com.client import Dispatch, pywintypes, makepy
+except:
+    print('Install pywin32 or com functions will not work')
 from pandas import concat, to_datetime, to_numeric, DataFrame, merge
 from hilltoppy.util import pytime_to_datetime, time_switch
 
