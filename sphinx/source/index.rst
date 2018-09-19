@@ -3,7 +3,7 @@ hilltop-py - Hilltop Python tools
 This package contains a variety of Python functions for accessing data contained in `Hilltop <http://www.hilltop.co.nz/>`_.
 You must have the Hilltop software to use this package.
 
-There are three different modules to access Hilltop data::
+There are three different modules to access Hilltop data:
   - Windows COM objects
   - Native Hilltop Python package
   - Hilltop web server
