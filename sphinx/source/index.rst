@@ -1,30 +1,22 @@
+hilltop-py - Hilltop Python tools
+==================================
+This package contains a variety of Python functions for accessing data contained in `Hilltop <http://www.hilltop.co.nz/>`_.
+You must have the Hilltop software to use this package.
 
-Welcome to ECan's Freshwater Reports
-===========================================
+There are three different modules to access Hilltop data::
+  - windows COM objects
+  - Native Hilltop Python package
+  - Hilltop web server
 
-Maps of Canterbury illustrating the relative wetness or dryness for precipitation, surface water, and groundwater are generated monthly. This documentation presents these maps and the associated seasonal reports. The intended audience for the maps and the associated reports are the Environment Canterbury Councillors.
+The recommended module is the web server as it is much easier to debug than the other two. Nevertheless the other two methods should work with one sometimes being more preferable than another under certain circumstances. Try them out and provide feedback on the `GitHub page <https://github.com/mullenkamp/hilltop-py>`_ to improve the package!
 
-NIWA seasonal climate outlook
--------------------------------
-NIWA produces seasonal forecasts, which can be found on `NIWA's website <https://www.niwa.co.nz/climate/seasonal-climate-outlook/seasonal-climate-outlook-march-may-2018>`_.
-
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Summer-Autumn 2018
-
-   Summer-Autumn-2018-precip-sw
-   Summer-Autumn-2018-gw
+The GitHub repository is found `here <https://github.com/mullenkamp/hilltop-py>`_.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Spring-Summer 2017-18
+   :caption: Sections
 
-   Spring-Summer-2017-18-precip-sw
-   Spring-Summer-2017-18-gw
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Methodology
-
-   methods-maps
+   installation
+   usage
+   package_references
+   license-terms

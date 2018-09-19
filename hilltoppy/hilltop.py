@@ -1,22 +1,49 @@
 # -*- coding: utf-8 -*-
 """
 Hilltop read functions.
-Hilltop uses a fixed base date as 1940-01-01, while the standard unix/POSIT base date is 1970-01-01.
 """
 import Hilltop
 import pandas as pd
-from hilltoppy.util import pytime_to_datetime, time_switch
+from hilltoppy.util import time_switch
 
 #####################################################
-#### New method - not ready yet...
+#### New method - might have issues
 
 
-def get_sites_mtypes(hts, sites=None):
+def site_list(hts):
+    """
+    Function to return a list of sites from an hts file. Exists for consistancy.
+
+    Parameters
+    ----------
+    hts : str
+        Path to hts file.
+
+    Returns
+    -------
+    list
+    """
+    dfile1 = Hilltop.Connect(hts)
+    site_list = Hilltop.SiteList(dfile1)
+    Hilltop.Disconnect(dfile1)
+
+    return site_list
+
+
+def measurement_list(hts, sites=None):
     """
     Function to read all of the sites in an hts file and the associated site info.
 
-    hts -- Path to hts file (str).\n
-    sites -- Optional list, array, series of site names to return.
+    Parameters
+    ----------
+    hts : str
+        Path to hts file.
+    sites : list
+        A list of site names to return.
+
+    Returns
+    -------
+    DataFrame
     """
 
     dfile1 = Hilltop.Connect(hts)
@@ -24,12 +51,15 @@ def get_sites_mtypes(hts, sites=None):
 
     if not site_list:
         print('No sites in ' + hts)
-        return(pd.DataFrame())
+        return None
 
     if isinstance(sites, list):
         site_list = [i for i in site_list if i in sites]
+        if not site_list:
+            print('No sites in ' + hts)
+            return None
 
-    site_info = pd.DataFrame()
+    site_info_list = []
 
     for i in site_list:
         try:
@@ -38,8 +68,8 @@ def get_sites_mtypes(hts, sites=None):
             print('Site ' + str(i) + " didn't work. Error: " + str(err))
             continue
         info1.loc[:, 'site'] = i.encode('ascii', 'ignore').decode()
-        site_info = pd.concat([site_info, info1])
-    site_info.reset_index(drop=True, inplace=True)
+        site_info_list.append(info1)
+    site_info = pd.concat(site_info_list)
 
     site_info.loc[:, 'Start Time'] = pd.to_datetime(site_info.loc[:, 'Start Time'], format='%d-%b-%Y %H:%M:%S', errors='coerce')
     site_info.loc[:, 'End Time'] = pd.to_datetime(site_info.loc[:, 'End Time'], format='%d-%b-%Y %H:%M:%S', errors='coerce')
@@ -59,7 +89,7 @@ def get_sites_mtypes(hts, sites=None):
     return site_info
 
 
-def get_tsdata(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_method='Average', agg_n=1, agg_period='day', output_missing_sites=False, site_info=None):
+def get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_method='Average', agg_n=1, agg_period='day', output_missing_sites=False, site_info=None):
     """
     Function to read water quantity data from an hts file.
 
@@ -92,7 +122,7 @@ def get_tsdata(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_m
     """
 
     if not isinstance(site_info, pd.DataFrame):
-        site_info = get_sites_mtypes(hts, sites=sites)
+        site_info = measurement_list(hts, sites=sites)
 
     if isinstance(mtypes, list):
         site_info = site_info[site_info['Measurement'].isin(mtypes)]

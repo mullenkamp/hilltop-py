@@ -1,0 +1,8 @@
+[
+  "hilltoppy/tests/test_web_service.py::test_site_list",
+  "hilltoppy/tests/test_web_service.py::test_measurement_list",
+  "hilltoppy/tests/test_web_service.py::test_wq_sample_parameter_list",
+  "hilltoppy/tests/test_web_service.py::test_get_data1",
+  "hilltoppy/tests/test_web_service.py::test_get_data2",
+  "hilltoppy/tests/test_web_service.py::test_get_data3"
+]

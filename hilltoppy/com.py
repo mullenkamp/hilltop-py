@@ -27,7 +27,7 @@ def makepy_hilltop(hlib='Hilltop Data Access'):
     makepy.GenerateFromTypeLibSpec(hlib, verboseLevel=1)
 
 
-def rd_hilltop_sites(hts, sites=None, mtypes=None, rem_wq_sample=True):
+def measurement_list(hts, sites=None, mtypes=None, rem_wq_sample=True):
     """
     Function to read the site names, measurement types, and units of a Hilltop hts file. Returns a DataFrame.
 
@@ -106,7 +106,7 @@ def rd_hilltop_sites(hts, sites=None, mtypes=None, rem_wq_sample=True):
     return sites_df
 
 
-def rd_ht_quan_data(hts, sites=None, mtypes=None, start=None, end=None, agg_period=None, agg_n=1, fun=None, output_site_data=False, exclude_mtype=None, sites_df=None):
+def get_data_quantity(hts, sites=None, mtypes=None, start=None, end=None, agg_period=None, agg_n=1, fun=None, output_site_data=False, exclude_mtype=None, sites_df=None):
     """
     Function to read water quantity data from an hts file.
 
@@ -144,7 +144,7 @@ def rd_ht_quan_data(hts, sites=None, mtypes=None, start=None, end=None, agg_peri
 
     ### First read all of the sites in the hts file and select the ones to be read
     if not isinstance(sites_df, DataFrame):
-        sites_df = rd_hilltop_sites(hts, sites=sites, mtypes=mtypes)
+        sites_df = measurement_list(hts, sites=sites, mtypes=mtypes)
     sites_df = sites_df[sites_df.unit.isin(list(agg_unit_dict.keys()))]
     if isinstance(exclude_mtype, list):
         sites_df = sites_df[~sites_df.mtype.isin(exclude_mtype)]
@@ -226,7 +226,7 @@ def rd_ht_quan_data(hts, sites=None, mtypes=None, start=None, end=None, agg_peri
         return df2
 
 
-def rd_ht_wq_data(hts, sites=None, mtypes=None, start=None, end=None, dtl_method=None, output_site_data=False, mtype_params=None, sample_params=None, sites_df=None):
+def get_data_quality(hts, sites=None, mtypes=None, start=None, end=None, dtl_method=None, output_site_data=False, mtype_params=None, sample_params=None, sites_df=None):
     """
     Function to read water quality data from an hts file.
 
@@ -256,7 +256,7 @@ def rd_ht_wq_data(hts, sites=None, mtypes=None, start=None, end=None, dtl_method
 
     ### First read all of the sites in the hts file and select the ones to be read
     if not isinstance(sites_df, DataFrame):
-        sites_df = rd_hilltop_sites(hts, sites=sites, mtypes=mtypes, rem_wq_sample=False)
+        sites_df = measurement_list(hts, sites=sites, mtypes=mtypes, rem_wq_sample=False)
 
     ### Select out the sites/mtypes within the date range
     if isinstance(start, str):
