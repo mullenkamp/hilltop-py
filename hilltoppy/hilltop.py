@@ -91,7 +91,7 @@ def measurement_list(hts, sites=None):
 
 def get_data(hts, sites=None, mtypes=None, from_date=None, to_date=None, agg_method='Average', agg_n=1, agg_period='day', output_missing_sites=False, site_info=None):
     """
-    Function to read water quantity data from an hts file.
+    Function to read time series from an hts file.
 
     Parameters
     ----------

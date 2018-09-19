@@ -3,50 +3,117 @@ How to use hilltop-py
 
 This section will describe how to use the hilltop-py package. The functions depend heavily on the Pandas package. Nearly all outputs are either as Pandas Series or DataFrames.
 
+Some of this documentation comes from the "Scripting.doc" file. Please look at that doc for more details about the internals.
+
 COM module
 ------------
-The package and general usage is via the main Hyd class with the parameters shown below.
+The following documentation describes how to set up and use the COM module functions.
+
+Register Hydrolib
+~~~~~~~~~~~~~~~~~
+First, Hilltop Manager needs to be added into the Windows registry. This can be done for either the 32bit or the 64bit versions of Hilltop Manager, but if you have the choice pick the 64bit version in case you need to handle very large datasets. Find either version of Hilltop Manager,  and open the program (called Manager.exe). Load in an hts file (this allows you to access the configuration menus). Go to the tab called ‘Configure’ then go to ‘installation’. It will ask you if you want Hilltop registered, and of course say yes. That’s all for the first part.
+
+Run makepy_hilltop
+~~~~~~~~~~~~~~~~~~
+The COM utility must be built for hilltop to access it's functions. This is all wrapped in a single function. Once Hydrolib is properly registered, run makepy_hilltop without any parameters and you should be ready to use the COM functions.
 
 .. code-block:: python
 
-  from pyhydllp import hyd
+  from hilltoppy import com
 
-  ini_path = r'\\fileservices02\ManagedShares\Data\Hydstra\prod\hyd'
-  dll_path = r'\\fileservices02\ManagedShares\Data\Hydstra\prod\hyd\sys\run'
-  username = ''
-  password = ''
-  hydllp_filename = 'hydllp.dll'
-  hyaccess_filename = 'Hyaccess.ini'
-  hyconfig_filename = 'HYCONFIG.INI'
+  com.makepy_hilltop()
 
-  hyd1 = hyd(ini_path, dll_path, hydllp_filename=hydllp_filename,
-             hyaccess_filename=hyaccess_filename, hyconfig_filename=hyconfig_filename,
-             username=username, password=password)
 
-Then all of the functions can be accessed via the newly initiated hyd1 object.
-The following example won't work outside of ECan:
+Data access
+~~~~~~~~~~~
+The function names are based on the associated Hilltop function names. Since functionally, accessing quantity data is quite different (from the COM) as compared to the quality data, there are two functions accessing the time series data.
 
 .. code-block:: python
 
-  sites = [70105, 69607]
-  datasource = 'A'
-  varfrom = 100 # the 100 code is water level
-  varto = 140 # the 140 code is flow
-  qual_codes = [30, 20, 10 ,11, 21, 18] # It's best to specify as hydllp can
-                                        # return bad values for a qual_code 255
-  from_mod_date = '2018-01-01'
-  to_mod_date = '2018-03-26'
+  from hilltoppy import com
 
-  sites_var = hyd1.get_variable_list(sites)
+  hts = r'\\path\to\file.hts'
+  sites = ['site1', 'site2']
+  mtypes = ['Total Suspended Solids']
 
-  print(sites_var)
+  meas_df = com.measurement_list(hts, sites)
 
-  ch1 = hyd1.ts_data_changes(varto=[varfrom], sites=sites, from_mod_date=from_mod_date,
-                             to_mod_date=to_mod_date)
-  print(ch1)
-
-  tsdata = hyd1.get_ts_data(sites=sites, start=from_mod_date, end=to_mod_date,
-                            varfrom=varfrom, varto=varto, datasource=datasource,
-                            qual_codes=qual_codes)
-
+  tsdata = com.get_data_quality(hts, sites, mtypes)
   print(tsdata)
+
+Native Python module
+--------------------
+The following documentation describes how to set up and use the module functions built upon the native python module.
+
+Python path to Hilltop.pyd
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+First, make sure that the Hilltop.pyd exists in either the root directory of the Hilltop directory or in the x64 directory (depending on your python installation). Open manager.exe, go to configure, and click on Python. It simply adds the Python path to the windows environment variables so that Python knows where to load the Hilltop.pyd from. This can also be modified from within Spyder or the sys module.
+
+Data access
+~~~~~~~~~~~
+The function names are similar to the COM module except that one function covers both quantity and quality data.
+
+.. code-block:: python
+
+  from hilltoppy import hilltop
+
+  hts = r'\\path\to\file.hts'
+  sites = ['site1', 'site2']
+  mtypes = ['Total Suspended Solids']
+
+  sites_out = hilltop.site_list(hts)
+
+  meas_df = hilltop.measurement_list(hts, sites)
+
+  tsdata = hilltop.get_data(hts, sites, mtypes)
+  print(tsdata)
+
+
+Web service
+-----------
+The web service calls are simpler and more straightforward. No extra setup is needed other than already having a Hilltop server to query. See the doc called "server.doc" for more details about the web service calls.
+
+Data access
+~~~~~~~~~~~
+The function names are the same, although the input parameters are slightly different. There is also an additional function specific to water quality samples. Below is an actual working example!
+
+.. code:: python
+
+    from hilltoppy import web_service as ws
+
+.. ipython:: python
+   :suppress:
+
+   from hilltoppy import web_service as ws
+
+.. ipython:: python
+
+  base_url = 'http://wateruse.ecan.govt.nz'
+  hts = 'WQAll.hts'
+  site = 'BV24/0024'
+  measurement = 'Nitrate Nitrogen'
+  from_date = '2015-01-01'
+  to_date = '2017-01-01'
+
+  sites_out = ws.site_list(base_url, hts)
+  sites_out[:10]
+
+  meas_df = ws.measurement_list(base_url, hts, site)
+  meas_df.head()
+
+  tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date)
+  tsdata.head()
+
+  tsdata2, extra2 = ws.get_data(base_url, hts, site, measurement, parameters=True)
+  tsdata2.head()
+  extra2.head()
+
+  tsdata3 = ws.get_data(base_url, hts, site, 'WQ Sample')
+  tsdata3.head()
+
+  wq_sample_df = ws.wq_sample_parameter_list(base_url, hts, site)
+  wq_sample_df.head()
+
+  # For debugging purposes - copy-paste output into internet browser
+  url = ws.build_url(base_url, hts, 'MeasurementList', site)
+  print(url)

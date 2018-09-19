@@ -1,27 +1,46 @@
 Package References
 ===================
 
-Base class
+COM module
 --------------
 
-.. autoclass:: pyhydllp.hyd
+.. autofunction:: hilltoppy.com.makepy_hilltop
 
-Methods
---------------------------------
+.. autofunction:: hilltoppy.com.measurement_list
 
-.. automethod:: pyhydllp.hyd.get_variable_list
+.. autofunction:: hilltoppy.com.get_data_quantity
 
-.. automethod:: pyhydllp.hyd.get_ts_blockinfo
+.. autofunction:: hilltoppy.com.get_data_quality
 
-.. automethod:: pyhydllp.hyd.ts_data_changes
+Native Hilltop Python module
+---------------------------
 
-.. automethod:: pyhydllp.hyd.get_ts_data
+.. autofunction:: hilltoppy.hilltop.site_list
+
+.. autofunction:: hilltoppy.hilltop.measurement_list
+
+.. autofunction:: hilltoppy.hilltop.get_data
+
+Web service
+---------------
+
+.. autofunction:: hilltoppy.web_service.build_url
+
+.. autofunction:: hilltoppy.web_service.site_list
+
+.. autofunction:: hilltoppy.web_service.measurement_list
+
+.. autofunction:: hilltoppy.web_service.measurement_list_all
+
+.. autofunction:: hilltoppy.web_service.get_data
+
+.. autofunction:: hilltoppy.web_service.wq_sample_parameter_list
 
 
 API Pages
 ---------
 
-.. currentmodule:: pyhydlllp
+.. currentmodule:: hilltoppy
 .. autosummary::
   :template: autosummary.rst
   :toctree: package_references/
