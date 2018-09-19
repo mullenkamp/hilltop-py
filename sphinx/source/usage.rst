@@ -81,22 +81,29 @@ The function names are the same, although the input parameters are slightly diff
 
     from hilltoppy import web_service as ws
 
+    base_url = 'http://wateruse.ecan.govt.nz'
+    hts = 'WQAll.hts'
+    site = 'BV24/0024'
+    measurement = 'Nitrate Nitrogen'
+    from_date = '2015-01-01'
+    to_date = '2017-01-01'
+
 .. ipython:: python
    :suppress:
 
    from hilltoppy import web_service as ws
 
+   base_url = 'http://wateruse.ecan.govt.nz'
+   hts = 'WQAll.hts'
+   site = 'BV24/0024'
+   measurement = 'Nitrate Nitrogen'
+   from_date = '2015-01-01'
+   to_date = '2017-01-01'
+
 .. ipython:: python
 
-  base_url = 'http://wateruse.ecan.govt.nz'
-  hts = 'WQAll.hts'
-  site = 'BV24/0024'
-  measurement = 'Nitrate Nitrogen'
-  from_date = '2015-01-01'
-  to_date = '2017-01-01'
-
   sites_out = ws.site_list(base_url, hts)
-  sites_out[:10]
+  sites_out[1:10]
 
   meas_df = ws.measurement_list(base_url, hts, site)
   meas_df.head()
