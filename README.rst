@@ -9,7 +9,7 @@ The primary documentation for the package can be found `here <http://hilltop-py.
 
 Installation
 ------------
-pdsql can be installed via pip or conda::
+hilltop-py can be installed via pip or conda::
 
   pip install hilltop-py
 
