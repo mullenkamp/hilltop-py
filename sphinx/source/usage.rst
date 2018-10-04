@@ -103,6 +103,8 @@ The function names are the same, although the input parameters are slightly diff
 
    from hilltoppy import web_service as ws
 
+   pd.options.display.max_columns = 5
+
    base_url = 'http://wateruse.ecan.govt.nz'
    hts = 'WQAll.hts'
    site = 'SQ31045'
@@ -122,7 +124,8 @@ The function names are the same, although the input parameters are slightly diff
   tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date)
   tsdata.head()
 
-  tsdata1 = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date, dtl_method=dtl_method)
+  tsdata1 = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date,
+                        dtl_method=dtl_method)
   tsdata1.head()
 
   tsdata2, extra2 = ws.get_data(base_url, hts, site, measurement, parameters=True)
