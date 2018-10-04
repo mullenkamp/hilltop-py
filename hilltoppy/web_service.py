@@ -250,7 +250,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -276,6 +276,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The aggregation interval for the agg_method. e.g. '1 day', '1 week', '1 month'.
     parameters : bool
         Should the additional parameters (other than the value) be extracted and returned if they exist?
+    dtl_method : None or str
+        The method to use to convert values below a detection limit to numeric. Used for water quality results. Options are 'half' or 'trend'. 'half' simply halves the detection limit value, while 'trend' uses half the highest detection limit across the results when more than 40% of the values are below the detection limit. Otherwise it uses half the detection limit.
 
     Returns
     -------
@@ -352,16 +354,40 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
         data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')
 
-
-    ### Add in additional columns and convert DateTime
+    ### Convert DateTime
     data_df['DateTime'] = pd.to_datetime(data_df['DateTime'], infer_datetime_format=True)
+
+    ### If detection limit values should be estimated
+    if isinstance(dtl_method, str):
+        less1 = data_df['Value'].str.contains('<')
+        if less1.sum() > 0:
+            less1.loc[less1.isnull()] = False
+            data_df = data_df.copy()
+            data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
+            data_df['Value'] = data_df['Value'].astype('float32')
+            if dtl_method == 'trend':
+                df1 = data_df.loc[less1]
+                count1 = len(data_df)
+                count_dtl = len(df1)
+                count_dtl_val = df1['Value'].nunique()
+                dtl_ratio = np.round(count_dtl / float(count1), 2)
+
+                if dtl_ratio > 0.7:
+                    print('More than 70% of the values are less then the detection limit! Be careful...')
+
+                if (dtl_ratio >= 0.4) or (count_dtl_val != 1):
+                    dtl_val = df1['Value'].max()
+                    data_df.loc[(data_df['Value'] < dtl_val) | less1, 'Value'] = dtl_val
+
+    ### Add in additional site column
     data_df['Site'] = site
+
+    ### Prepare dataframes to be returned
     if measurement == 'WQ Sample':
         data_df = data_df.set_index(['Site', 'Parameter', 'DateTime'])
     else:
         data_df['Measurement'] = measurement
         data_df = data_df.set_index(['Site', 'Measurement', 'DateTime'])
-
     if (parameters) & (datatype == 'WQData'):
         if tsextra_dict:
             extra_df['DateTime'] = pd.to_datetime(extra_df['DateTime'], infer_datetime_format=True)
