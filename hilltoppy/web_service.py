@@ -276,7 +276,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The aggregation interval for the agg_method. e.g. '1 day', '1 week', '1 month'.
     parameters : bool
         Should the additional parameters (other than the value) be extracted and returned if they exist?
-    dtl_method : None or str
+    dtl_method : str or None
         The method to use to convert values below a detection limit to numeric. Used for water quality results. Options are 'half' or 'trend'. 'half' simply halves the detection limit value, while 'trend' uses half the highest detection limit across the results when more than 40% of the values are below the detection limit. Otherwise it uses half the detection limit.
 
     Returns
