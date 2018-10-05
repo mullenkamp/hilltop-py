@@ -114,10 +114,12 @@ def site_list(base_url, hts, location=False):
         root url str
     hts : str
         hts file name including the .hts extension.
+    location : bool
+        Should the Easting and Northing be returned?
 
     Returns
     -------
-    list of str
+    DataFrame
     """
     url = build_url(base_url, hts, 'SiteList', location=location)
     resp = requests.get(url)
