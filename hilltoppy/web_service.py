@@ -104,7 +104,7 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     return url
 
 
-def site_list(base_url, hts):
+def site_list(base_url, hts, location=False):
     """
     SiteList request function. Returns a list of sites associated with the hts file.
 
@@ -119,12 +119,27 @@ def site_list(base_url, hts):
     -------
     list of str
     """
-    url = build_url(base_url, hts, 'SiteList')
+    url = build_url(base_url, hts, 'SiteList', location=location)
     resp = requests.get(url)
     tree1 = ET.fromstring(resp.content)
-    sites = [i.attrib['Name'] for i in tree1.findall('Site')]
+    site_tree = tree1.findall('Site')
+    if location:
+        sites_dict = {}
+        for s in site_tree:
+            site1 = s.attrib['Name']
+            children = s.getchildren()
+            if len(children) == 2:
+                locs1 = [int(l.text) for l in children]
+                sites_dict.update({site1: locs1})
+            else:
+                sites_dict.update({site1: [np.nan, np.nan]})
+        sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=['Easting', 'Northing'])
+        sites_df.index.name = 'SiteName'
+        sites_df.reset_index(inplace=True)
+    else:
+        sites_df = pd.DataFrame([i.attrib['Name'] for i in tree1.findall('Site')], columns=['SiteName'])
 
-    return sites
+    return sites_df
 
 
 def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=False):

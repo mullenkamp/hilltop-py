@@ -115,8 +115,11 @@ The function names are the same, although the input parameters are slightly diff
 
 .. ipython:: python
 
-  sites_out = ws.site_list(base_url, hts)
-  sites_out[1:10]
+  sites_out1 = ws.site_list(base_url, hts)
+  sites_out1.head()
+
+  sites_out2 = ws.site_list(base_url, hts, location=True)
+  sites_out2.head()
 
   meas_df = ws.measurement_list(base_url, hts, site)
   meas_df.head()
