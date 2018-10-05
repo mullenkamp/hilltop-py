@@ -102,6 +102,7 @@ The function names are the same, although the input parameters are slightly diff
    :suppress:
 
    from hilltoppy import web_service as ws
+   import pandas as pd
 
    pd.options.display.max_columns = 5
 
