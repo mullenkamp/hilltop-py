@@ -50,5 +50,5 @@ def test_get_data3():
 
 def test_get_data4():
     tsdata4, extra4 = get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date, parameters=True, dtl_method=dtl_method)
-    assert (len(tsdata2) > 80) & (len(extra2) > 300) & (tsdata4.Value.dtype.name == 'float32')
+    assert (len(tsdata4) > 80) & (len(extra4) > 300) & (tsdata4.Value.dtype.name == 'float32')
 
