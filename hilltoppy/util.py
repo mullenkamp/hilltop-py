@@ -137,7 +137,7 @@ def proc_ht_use_data_ws(ht_data):
                 vol = diff1
         elif mtype in ['Compliance Volume', 'Volume']:
             vol = data
-        elif mtype == 'Flow':
+        elif mtype == 'Flow [Flow]':
 #            vol = (data * 60*60*24).fillna(method='ffill').round(4)
             vol = (data * 60*60*24)
         elif mtype == 'Average Flow':
