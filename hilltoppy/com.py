@@ -373,6 +373,7 @@ def get_data_quality(hts, sites=None, mtypes=None, start=None, end=None, dtl_met
         else:
             return data3
 
+
 def write_wq_data(hts, data):
     """
     Function to write water quality data to Hilltop hts files.
@@ -380,7 +381,7 @@ def write_wq_data(hts, data):
     Parameters
     ------------
     hts : str
-        PAth to the hts file to write to.
+        Path to the hts file to write to.
     data : dict
         A dictionary of the data in the following example structure
         {'SQ00001': {'2000-01-01 12:00:00': {'SiteParameter':
