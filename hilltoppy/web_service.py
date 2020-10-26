@@ -357,7 +357,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                     continue
                 tsdata_list.append([d.find('T').text, d.find('Value').text.encode('ascii', 'ignore').decode()])
             data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
-    elif datatype in ['SimpleTimeSeries', 'MeterReading']:
+    elif datatype in ['SimpleTimeSeries', 'MeterReading', 'GaugingResults']:
         tsdata_list = []
         gap = 0
         for d in es1:
@@ -370,6 +370,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode()])
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
         data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')
+
+    else:
+        raise ValueError('Data Source has no querying option in hilltop-py')
 
     ### Convert DateTime
     data_df['DateTime'] = pd.to_datetime(data_df['DateTime'], infer_datetime_format=True)
@@ -475,6 +478,3 @@ def wq_sample_parameter_list(base_url, hts, site):
         mtype_df['Site'] = site
 
     return mtype_df.set_index(['Site', 'Parameter'])
-
-
-
