@@ -165,7 +165,7 @@ def site_list(base_url, hts, location=None):
         if (location == 'Yes') or (location == True):
             cols = ['Easting', 'Northing']
         elif location == 'LatLong':
-            cols = ['lon', 'lat']
+            cols = ['lat', 'lon']
 
         sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=cols)
         sites_df.index.name = 'SiteName'

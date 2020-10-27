@@ -1,6 +1,6 @@
 {% set name = "hilltop-py" %}
-{% set version = "1.4.3" %}
-{% set sha256 = "aeecb1161f6dd4cc34f216d62b356396153a9ba60a0180c0a75ef61b215140d5" %}
+{% set version = "1.4.4" %}
+{% set sha256 = "4dc96f7bd5644adffc1cb1d0ef0fd4e3c76d0b260faa33c45f0f01b51ad94a0a" %}
 
 # sha256 is the prefered checksum -- you can get it for a file with:
 #  `openssl sha256 <file name>`.
