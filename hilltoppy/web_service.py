@@ -40,7 +40,7 @@ gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=False, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False):
+def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -60,8 +60,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
         The start date in the format 2001-01-01. None will put it to the beginning of the time series.
     to_date : str or None
         The end date in the format 2001-01-01. None will put it to the end of the time series.
-    location : bool
-        Should the location be returned? Only applies to the SiteList request.
+    location : str or bool
+        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
     site_parameters : list
         A list of the site parameters to be returned with the SiteList request.
     agg_method : str
@@ -100,8 +100,12 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
 #        url = url + '&Collection=' + requests.utils.quote(collection)
     if isinstance(site_parameters, list):
         url = url + '&SiteParameters=' + requests.utils.quote(','.join(site_parameters))
-    if location and (request == 'SiteList'):
-        url = url + '&Location=Yes'
+    if isinstance(location, (str, bool)) and (request == 'SiteList'):
+        if isinstance(location, bool):
+            if location:
+                url = url + '&Location=Yes'
+        else:
+            url = url + '&Location=' + location
     if quality_codes and (request == 'GetData'):
         url = url + '&ShowQuality=Yes'
 
