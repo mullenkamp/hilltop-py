@@ -130,7 +130,7 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     return url
 
 
-def site_list(base_url, hts, location=False):
+def site_list(base_url, hts, location=None):
     """
     SiteList request function. Returns a list of sites associated with the hts file.
 
@@ -140,8 +140,8 @@ def site_list(base_url, hts, location=False):
         root url str
     hts : str
         hts file name including the .hts extension.
-    location : bool
-        Should the Easting and Northing be returned?
+    location : str or bool
+        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
 
     Returns
     -------
@@ -151,17 +151,23 @@ def site_list(base_url, hts, location=False):
     resp = requests.get(url)
     tree1 = ET.fromstring(resp.content)
     site_tree = tree1.findall('Site')
-    if location:
+    if isinstance(location, (str, bool)):
         sites_dict = {}
         for s in site_tree:
             site1 = s.attrib['Name']
             children = s.getchildren()
             if len(children) == 2:
-                locs1 = [int(l.text) for l in children]
+                locs1 = [float(l.text) for l in children]
                 sites_dict.update({site1: locs1})
             else:
                 sites_dict.update({site1: [np.nan, np.nan]})
-        sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=['Easting', 'Northing'])
+
+        if (location == 'Yes') or (location == True):
+            cols = ['Easting', 'Northing']
+        elif location == 'LatLong':
+            cols = ['lon', 'lat']
+
+        sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=cols)
         sites_df.index.name = 'SiteName'
         sites_df.reset_index(inplace=True)
     else:
