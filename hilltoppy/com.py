@@ -373,3 +373,63 @@ def get_data_quality(hts, sites=None, mtypes=None, start=None, end=None, dtl_met
         else:
             return data3
 
+
+def write_wq_data(hts, data):
+    """
+    Function to write water quality data to Hilltop hts files.
+
+    Parameters
+    ------------
+    hts : str
+        Path to the hts file to write to.
+    data : dict
+        A dictionary of the data in the following example structure
+        {'SQ00001': {'2000-01-01 12:00:00': {'SiteParameter':
+                                   {'Sample ID': '174759302',
+                                    'Project': 'BPStreams'
+                                    }
+                               'Measurement':
+                                   {'Conductivity (Field)':
+                                        {'Value': '18.59',
+                                         'MethodText': 'Unknown meter',
+                                         'Lab': 'Field'
+                                         }
+                                        }
+                                       }
+                     }
+         }
+
+    Returns
+    -------
+    None
+    """
+    for s in data:
+        print(s)
+        dfile = Dispatch("Hilltop.WQInput")
+        try:
+            dfile.Open(hts)
+        except ValueError:
+            print(dfile.ErrorMsg)
+
+        for d in data[s]:
+            # print(d)
+            q1 = data[s][d]
+
+            dfile.PutSample(s, d) # Initialize the site and time
+            if 'SiteParameter' in q1:
+                sp4 = q1['SiteParameter']
+                for key, val in sp4.items():
+                    dfile.SetParam(key, val) # set the sample paremters, not associated with measurement types
+            if 'Measurement' in q1:
+                m1 = q1['Measurement']
+                for key, val in m1.items():
+                    dup = val.copy()
+                    dfile.PutMeasurement(key, dup.pop('Value')) # Set a measurement value
+                    if dup:
+                        for mp, mpval in dup.items():
+                            dfile.SetParam(mp, mpval) # sample parameters associated with the measurement parameter
+
+        if len(dfile.ErrorMsg) > 0:
+            raise ValueError(dfile.ErrorMsg)
+        else:
+            dfile.Close()   # commit data to the hts file

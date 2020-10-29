@@ -20,11 +20,27 @@ import numpy as np
 
 available_requests = ['SiteList', 'MeasurementList', 'GetData']
 
+gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
+                'Flow [Gauging Results]': {'row': 'I2', 'multiplier': 0.001},
+                'Area': {'row': 'I3', 'multiplier': 0.001},
+                'Velocity [Gauging Results]': {'row': 'I4', 'multiplier': 0.001},
+                'Max Depth': {'row': 'I5', 'multiplier': 0.001},
+                'Slope': {'row': 'I6', 'multiplier': 1},
+                'Width': {'row': 'I7', 'multiplier': 0.001},
+                'Hyd Radius': {'row': 'I8', 'multiplier': 0.001},
+                'Wet. Perimeter': {'row': 'I9', 'multiplier': 0.001},
+                'Sed. Conc.': {'row': 'I10', 'multiplier': 1},
+                'Temperature': {'row': 'I11', 'multiplier': 0.1},
+                'Stage Change [Gauging Results]': {'row': 'I12', 'multiplier': 1},
+                'Method': {'row': 'I13', 'multiplier': 1},
+                'Number Verts.': {'row': 'I14', 'multiplier': 1},
+                'Gauge Num.': {'row': 'I15', 'multiplier': 1}}
+
 
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=False, site_parameters=None, agg_method=None, agg_interval=None, alignment=None):
+def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -44,14 +60,18 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
         The start date in the format 2001-01-01. None will put it to the beginning of the time series.
     to_date : str or None
         The end date in the format 2001-01-01. None will put it to the end of the time series.
-    location : bool
-        Should the location be returned? Only applies to the SiteList request.
+    location : str or bool
+        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
     site_parameters : list
         A list of the site parameters to be returned with the SiteList request.
     agg_method : str
         The aggregation method to resample the data. e.g. Average, Total, Moving Average, Extrema.
     agg_interval : str
         The aggregation interval for the agg_method. e.g. '1 day', '1 week', '1 month'.
+    alignment : str
+        The time alignment in the form '00:00'.
+    quality_codes : bool
+        Should the quality codes get returned from the GetData function.
 
     Returns
     -------
@@ -80,8 +100,14 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
 #        url = url + '&Collection=' + requests.utils.quote(collection)
     if isinstance(site_parameters, list):
         url = url + '&SiteParameters=' + requests.utils.quote(','.join(site_parameters))
-    if location and (request == 'SiteList'):
-        url = url + '&Location=Yes'
+    if isinstance(location, (str, bool)) and (request == 'SiteList'):
+        if isinstance(location, bool):
+            if location:
+                url = url + '&Location=Yes'
+        else:
+            url = url + '&Location=' + location
+    if quality_codes and (request == 'GetData'):
+        url = url + '&ShowQuality=Yes'
 
     ### Time interval goes last!
     if request == 'GetData':
@@ -104,7 +130,7 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     return url
 
 
-def site_list(base_url, hts, location=False):
+def site_list(base_url, hts, location=None):
     """
     SiteList request function. Returns a list of sites associated with the hts file.
 
@@ -114,28 +140,34 @@ def site_list(base_url, hts, location=False):
         root url str
     hts : str
         hts file name including the .hts extension.
-    location : bool
-        Should the Easting and Northing be returned?
+    location : str or bool
+        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
 
     Returns
     -------
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteList', location=location)
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     site_tree = tree1.findall('Site')
-    if location:
+    if isinstance(location, (str, bool)):
         sites_dict = {}
         for s in site_tree:
             site1 = s.attrib['Name']
             children = s.getchildren()
             if len(children) == 2:
-                locs1 = [int(l.text) for l in children]
+                locs1 = [float(l.text) for l in children]
                 sites_dict.update({site1: locs1})
             else:
                 sites_dict.update({site1: [np.nan, np.nan]})
-        sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=['Easting', 'Northing'])
+
+        if (location == 'Yes') or (location == True):
+            cols = ['Easting', 'Northing']
+        elif location == 'LatLong':
+            cols = ['lat', 'lon']
+
+        sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=cols)
         sites_df.index.name = 'SiteName'
         sites_df.reset_index(inplace=True)
     else:
@@ -174,7 +206,7 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
     url = build_url(base_url, hts, 'MeasurementList', site, measurement)
 
     ### Request data and load in xml
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
@@ -267,7 +299,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -295,6 +327,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         Should the additional parameters (other than the value) be extracted and returned if they exist?
     dtl_method : str or None
         The method to use to convert values below a detection limit to numeric. Used for water quality results. Options are 'half' or 'trend'. 'half' simply halves the detection limit value, while 'trend' uses half the highest detection limit across the results when more than 40% of the values are below the detection limit. Otherwise it uses half the detection limit.
+    quality_codes : bool
+        Should the quality codes get returned?
 
     Returns
     -------
@@ -302,10 +336,10 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         If parameters is False, then only one DataFrame is returned indexed by Site, Measurement, and DateTime. If parameters is True, then two DataFrames are returned. The first is the same as if parameters is False, but the second contains those additional parameters indexed by Site, Measurement, DateTime, and Parameter.
     """
     ### Make url
-    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment)
+    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes)
 
     ### Request data and load in xml
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
@@ -315,7 +349,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         return pd.DataFrame()
     datatype = meas1.find('DataSource').find('DataType').text
     data1 = meas1.find('Data')
-    es1 = data1.getchildren()
+    es1 = list(data1)
 
     ### Extract data
     if measurement == 'WQ Sample':
@@ -367,9 +401,36 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 continue
             if gap % 2 == 1:
                 continue
-            tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode()])
-        data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
+
+            if quality_codes:
+                tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode(), d.find('Q1').text.encode('ascii', 'ignore').decode()])
+            else:
+                tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode()])
+
+        if quality_codes:
+            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value', 'QualityCode'])
+        else:
+            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
         data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')
+
+    elif datatype in ['GaugingResults']:
+        if not measurement in gauging_dict:
+            raise ValueError('The requested Gauging Measurement type is not correct')
+        g_type = gauging_dict[measurement]
+        tsdata_list = []
+        gap = 0
+        for d in es1:
+            tag1 = d.tag
+            if tag1 == 'Gap':
+                gap = gap + 1
+                continue
+            if gap % 2 == 1:
+                continue
+            tsdata_list.append([d.find('T').text, int(d.find(g_type['row']).text.encode('ascii', 'ignore').decode()) * g_type['multiplier']])
+        data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
+
+    else:
+        raise ValueError('Data Source has no querying option in hilltop-py')
 
     ### Convert DateTime
     data_df['DateTime'] = pd.to_datetime(data_df['DateTime'], infer_datetime_format=True)
@@ -443,7 +504,7 @@ def wq_sample_parameter_list(base_url, hts, site):
     url = build_url(base_url, hts, 'GetData', site, 'WQ Sample')
 
     ### Request data and load in xml
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
@@ -475,6 +536,3 @@ def wq_sample_parameter_list(base_url, hts, site):
         mtype_df['Site'] = site
 
     return mtype_df.set_index(['Site', 'Parameter'])
-
-
-
