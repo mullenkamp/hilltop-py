@@ -148,7 +148,7 @@ def site_list(base_url, hts, location=None):
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteList', location=location)
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     site_tree = tree1.findall('Site')
     if isinstance(location, (str, bool)):
@@ -206,7 +206,7 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
     url = build_url(base_url, hts, 'MeasurementList', site, measurement)
 
     ### Request data and load in xml
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
@@ -339,7 +339,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
     url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes)
 
     ### Request data and load in xml
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
@@ -504,7 +504,7 @@ def wq_sample_parameter_list(base_url, hts, site):
     url = build_url(base_url, hts, 'GetData', site, 'WQ Sample')
 
     ### Request data and load in xml
-    resp = requests.get(url)
+    resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
