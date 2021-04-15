@@ -7,7 +7,7 @@ Created on Wed May 30 12:05:46 2018
 from hilltoppy.web_service import measurement_list, site_list, get_data, wq_sample_parameter_list
 
 ### Parameters
-base_url = 'http://wateruse.ecan.govt.nz'
+base_url = 'http://data.ecan.govt.nz/'
 hts = 'WQAll.hts'
 site = 'SQ31045'
 measurement = 'Total Phosphorus'
