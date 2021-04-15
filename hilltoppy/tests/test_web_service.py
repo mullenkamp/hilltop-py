@@ -19,7 +19,7 @@ dtl_method = 'trend'
 
 
 def test_site_list():
-    sites = site_list(base_url, hts)
+    sites = site_list(base_url, hts, True)
     assert len(sites) > 9000
 
 
