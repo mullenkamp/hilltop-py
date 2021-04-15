@@ -3,7 +3,77 @@ How to use hilltop-py
 
 This section will describe how to use the hilltop-py package. The functions depend heavily on the Pandas package. Nearly all outputs are either as Pandas Series or DataFrames.
 
-Some of this documentation comes from the "Scripting.doc" file. Please look at that doc for more details about the internals.
+Some of this documentation comes from the "Scripting.doc" file in the Hilltop installation folder. Please look at that doc for more details about the internals.
+
+
+Web service
+-----------
+The web service calls are simpler and more straightforward than the other two options. No extra setup is needed other than already having a Hilltop server to query. See the doc called "server.doc" for more details about the web service calls.
+
+Data access
+~~~~~~~~~~~
+The function names are based on the associated Hilltop function names from the COM module. There is also an additional function specific to water quality samples. Below is an actual working example!
+
+.. code:: python
+
+    from hilltoppy import web_service as ws
+
+    base_url = 'http://data.ecan.govt.nz/'
+    hts = 'WQAll.hts'
+    site = 'SQ31045'
+    measurement = 'Total Phosphorus'
+    from_date = '1983-11-22'
+    to_date = '2018-04-13'
+    dtl_method = 'trend'
+
+.. ipython:: python
+   :suppress:
+
+   from hilltoppy import web_service as ws
+   import pandas as pd
+
+   pd.options.display.max_columns = 5
+
+   base_url = 'http://data.ecan.govt.nz/'
+   hts = 'WQAll.hts'
+   site = 'SQ31045'
+   measurement = 'Total Phosphorus'
+   from_date = '1983-11-22'
+   to_date = '2018-04-13'
+   dtl_method = 'trend'
+
+.. ipython:: python
+
+  sites_out1 = ws.site_list(base_url, hts)
+  sites_out1.head()
+
+  sites_out2 = ws.site_list(base_url, hts, location=True)
+  sites_out2.head()
+
+  meas_df = ws.measurement_list(base_url, hts, site)
+  meas_df.head()
+
+  tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date)
+  tsdata.head()
+
+  tsdata1 = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date,
+                        dtl_method=dtl_method)
+  tsdata1.head()
+
+  tsdata2, extra2 = ws.get_data(base_url, hts, site, measurement, parameters=True)
+  tsdata2.head()
+  extra2.head()
+
+  tsdata3 = ws.get_data(base_url, hts, site, 'WQ Sample')
+  tsdata3.head()
+
+  wq_sample_df = ws.wq_sample_parameter_list(base_url, hts, site)
+  wq_sample_df.head()
+
+  # For debugging purposes - copy-paste output into internet browser
+  url = ws.build_url(base_url, hts, 'MeasurementList', site)
+  print(url)
+
 
 COM module
 ------------
@@ -76,72 +146,3 @@ The function names are similar to the COM module except that one function covers
 
   tsdata = hilltop.get_data(hts, sites, mtypes)
   print(tsdata)
-
-
-Web service
------------
-The web service calls are simpler and more straightforward. No extra setup is needed other than already having a Hilltop server to query. See the doc called "server.doc" for more details about the web service calls.
-
-Data access
-~~~~~~~~~~~
-The function names are the same, although the input parameters are slightly different. There is also an additional function specific to water quality samples. Below is an actual working example!
-
-.. code:: python
-
-    from hilltoppy import web_service as ws
-
-    base_url = 'http://wateruse.ecan.govt.nz'
-    hts = 'WQAll.hts'
-    site = 'SQ31045'
-    measurement = 'Total Phosphorus'
-    from_date = '1983-11-22'
-    to_date = '2018-04-13'
-    dtl_method = 'trend'
-
-.. ipython:: python
-   :suppress:
-
-   from hilltoppy import web_service as ws
-   import pandas as pd
-
-   pd.options.display.max_columns = 5
-
-   base_url = 'http://wateruse.ecan.govt.nz'
-   hts = 'WQAll.hts'
-   site = 'SQ31045'
-   measurement = 'Total Phosphorus'
-   from_date = '1983-11-22'
-   to_date = '2018-04-13'
-   dtl_method = 'trend'
-
-.. ipython:: python
-
-  sites_out1 = ws.site_list(base_url, hts)
-  sites_out1.head()
-
-  sites_out2 = ws.site_list(base_url, hts, location=True)
-  sites_out2.head()
-
-  meas_df = ws.measurement_list(base_url, hts, site)
-  meas_df.head()
-
-  tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date)
-  tsdata.head()
-
-  tsdata1 = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date,
-                        dtl_method=dtl_method)
-  tsdata1.head()
-
-  tsdata2, extra2 = ws.get_data(base_url, hts, site, measurement, parameters=True)
-  tsdata2.head()
-  extra2.head()
-
-  tsdata3 = ws.get_data(base_url, hts, site, 'WQ Sample')
-  tsdata3.head()
-
-  wq_sample_df = ws.wq_sample_parameter_list(base_url, hts, site)
-  wq_sample_df.head()
-
-  # For debugging purposes - copy-paste output into internet browser
-  url = ws.build_url(base_url, hts, 'MeasurementList', site)
-  print(url)
