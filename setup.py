@@ -25,16 +25,6 @@ else:
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-# get all data dirs in the datasets module
-# data_files = []
-#
-# for item in os.listdir(os.path.join(main_package, datasets)):
-#     if not item.startswith('__'):
-#         if os.path.isdir(os.path.join(main_package, datasets, item)):
-#             data_files.append(os.path.join(datasets, item, '*'))
-#         elif item.endswith('.zip'):
-#             data_files.append(os.path.join(datasets, item))
-
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
