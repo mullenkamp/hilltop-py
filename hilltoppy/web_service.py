@@ -155,7 +155,8 @@ def site_list(base_url, hts, location=None, measurement=None):
         sites_dict = {}
         for s in site_tree:
             site1 = s.attrib['Name']
-            children = s.getchildren()
+            # children = s.getchildren()
+            children = list(s)
             if len(children) == 2:
                 locs1 = [float(l.text) for l in children]
                 sites_dict.update({site1: locs1})
@@ -513,7 +514,8 @@ def wq_sample_parameter_list(base_url, hts, site):
         print('No data, returning empty DataFrame')
         return pd.DataFrame()
     data1 = meas1.find('Data')
-    es1 = data1.getchildren()
+    # es1 = data1.getchildren()
+    es1 = list(data1)
 
     ### Extract data
     tsdata_dict = {}
