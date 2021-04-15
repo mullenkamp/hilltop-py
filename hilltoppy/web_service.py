@@ -130,7 +130,7 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     return url
 
 
-def site_list(base_url, hts, location=None):
+def site_list(base_url, hts, location=None, measurement=None):
     """
     SiteList request function. Returns a list of sites associated with the hts file.
 
@@ -147,7 +147,7 @@ def site_list(base_url, hts, location=None):
     -------
     DataFrame
     """
-    url = build_url(base_url, hts, 'SiteList', location=location)
+    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement)
     resp = requests.get(url, timeout=300)
     tree1 = ET.fromstring(resp.content)
     site_tree = tree1.findall('Site')
