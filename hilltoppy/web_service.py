@@ -40,7 +40,7 @@ gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False):
+def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False, tstype=None):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -72,6 +72,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
         The time alignment in the form '00:00'.
     quality_codes : bool
         Should the quality codes get returned from the GetData function.
+    tstype : str
+        The timeseries type, one of Standard, Check or Quality
 
     Returns
     -------
@@ -108,6 +110,14 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
             url = url + '&Location=' + location
     if quality_codes and (request == 'GetData'):
         url = url + '&ShowQuality=Yes'
+
+    if tstype and (request == 'GetData'):
+        if tstype == 'Standard':
+            url = url + '&tsType=StdSeries'
+        elif tstype == 'Quality':
+            url = url + '&tsType=StdQualSeries'
+        elif tstype == 'Check':
+            url = url + '&tsType=CheckSeries'
 
     ### Time interval goes last!
     if request == 'GetData':
@@ -300,7 +310,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False, tstype=None):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -330,6 +340,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The method to use to convert values below a detection limit to numeric. Used for water quality results. Options are 'half' or 'trend'. 'half' simply halves the detection limit value, while 'trend' uses half the highest detection limit across the results when more than 40% of the values are below the detection limit. Otherwise it uses half the detection limit.
     quality_codes : bool
         Should the quality codes get returned?
+    tstype : str
+        The timeseries type, one of Standard, Check or Quality
 
     Returns
     -------
@@ -337,7 +349,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         If parameters is False, then only one DataFrame is returned indexed by Site, Measurement, and DateTime. If parameters is True, then two DataFrames are returned. The first is the same as if parameters is False, but the second contains those additional parameters indexed by Site, Measurement, DateTime, and Parameter.
     """
     ### Make url
-    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes)
+    url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype)
 
     ### Request data and load in xml
     resp = requests.get(url, timeout=300)
