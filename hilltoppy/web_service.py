@@ -187,7 +187,7 @@ def site_list(base_url, hts, location=None, measurement=None):
     return sites_df
 
 
-def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=False):
+def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=False, tstype="Standard"):
     """
     Function to query a Hilltop server for the measurement summary of a site.
 
@@ -203,6 +203,8 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
         The measurement type name.
     output_bad_sites : bool
         Should sites with problems be returned?
+    tstype : str
+        Which type of dataseries are to be output, Standard or All?
 
     Returns
     -------
@@ -210,7 +212,12 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
         indexed by Site and Measurement.
         If output_bad_sites is True than two DataFrames are returned.
     """
-    ds_types = ['DataType', 'From', 'To', 'SensorGroup']
+    # Add the TSType field to the output dataframe if all measurements are requested.
+    if tstype != "All":
+        ds_types = ['DataType', 'From', 'To', 'SensorGroup']
+    else:
+        ds_types = ['DataType', 'From', 'To', 'SensorGroup', 'TSType']
+    
     m_types = ['RequestAs', 'Units']
 
     ### Make url
@@ -242,7 +249,7 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
     for d in data_sources:
         if d.find('TSType') is None:
             pass
-        elif d.find('TSType').text != 'StdSeries':
+        elif d.find('TSType').text != 'StdSeries' and tstype != "All":
             continue
         ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in d if c.tag in ds_types}
         m_all = d.findall('Measurement')
