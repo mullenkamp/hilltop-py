@@ -10,7 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 name = 'hilltop-py'
 main_package = 'hilltoppy'
 # datasets = 'datasets'
-version = '1.4.11'
+version = '1.4.12'
 descrip = 'Functions to access Hilltop data'
 
 # The below code is for readthedocs. To have sphinx/readthedocs interact with
