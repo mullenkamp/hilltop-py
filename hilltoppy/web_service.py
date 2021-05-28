@@ -217,7 +217,7 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
         ds_types = ['DataType', 'From', 'To', 'SensorGroup']
     else:
         ds_types = ['DataType', 'From', 'To', 'SensorGroup', 'TSType']
-    
+
     m_types = ['RequestAs', 'Units']
 
     ### Make url
@@ -457,25 +457,34 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
     ### If detection limit values should be estimated
     if isinstance(dtl_method, str):
-        less1 = data_df['Value'].str.contains('<')
-        if less1.sum() > 0:
-            less1.loc[less1.isnull()] = False
-            data_df = data_df.copy()
-            data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
-            data_df['Value'] = data_df['Value'].astype('float32')
-            if dtl_method == 'trend':
-                df1 = data_df.loc[less1]
-                count1 = len(data_df)
-                count_dtl = len(df1)
-                count_dtl_val = df1['Value'].nunique()
-                dtl_ratio = np.round(count_dtl / float(count1), 2)
+        if data_df['Value'].dtype == 'object':
+            less1 = data_df['Value'].str.contains('<')
+            if less1.sum() > 0:
+                less1.loc[less1.isnull()] = False
+                data_df = data_df.copy()
+                data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
+                data_df['Value'] = data_df['Value'].astype('float32')
+                if dtl_method == 'trend':
+                    df1 = data_df.loc[less1]
+                    count1 = len(data_df)
+                    count_dtl = len(df1)
+                    count_dtl_val = df1['Value'].nunique()
+                    dtl_ratio = np.round(count_dtl / float(count1), 2)
 
-                if dtl_ratio > 0.7:
-                    print('More than 70% of the values are less then the detection limit! Be careful...')
+                    if dtl_ratio > 0.7:
+                        print('More than 70% of the values are less then the detection limit! Be careful...')
 
-                if (dtl_ratio >= 0.4) or (count_dtl_val != 1):
-                    dtl_val = df1['Value'].max()
-                    data_df.loc[(data_df['Value'] < dtl_val) | less1, 'Value'] = dtl_val
+                    if (dtl_ratio >= 0.4) or (count_dtl_val != 1):
+                        dtl_val = df1['Value'].max()
+                        data_df.loc[(data_df['Value'] < dtl_val) | less1, 'Value'] = dtl_val
+
+        if data_df['Value'].dtype == 'object':
+            greater1 = data_df['Value'].str.contains('>')
+            if greater1.sum() > 0:
+                greater1.loc[greater1.isnull()] = False
+                data_df = data_df.copy()
+                data_df.loc[greater1, 'Value'] = pd.to_numeric(data_df.loc[greater1, 'Value'].str.replace('>', ''), errors='coerce') * 2
+                data_df['Value'] = data_df['Value'].astype('float32')
 
     ### Add in additional site column
     data_df['Site'] = site
