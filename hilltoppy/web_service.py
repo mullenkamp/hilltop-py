@@ -471,7 +471,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 less1.loc[less1.isnull()] = False
                 data_df = data_df.copy()
                 data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
-            data_df['Value'] = pd.to_numeric(data_df['Value'], errors='ignore')
+            data_df['Value'] = pd.to_numeric(data_df['Value'], errors='coerce')
             if (dtl_method == 'trend') and (less1.sum() > 0):
                 df1 = data_df.loc[less1]
                 count1 = len(data_df)
