@@ -317,7 +317,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False, tstype=None):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False, tstype=None, ignore_gaps=True):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -349,6 +349,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         Should the quality codes get returned?
     tstype : str
         The timeseries type, one of Standard, Check or Quality
+    ignore_gaps : bool
+        Should gaps be ignored when pulling out the data? Different organisations handle gap tagging differently. Some put gap tags at the beginning and end of a gap, while others put only a single gap tag. If ignore_gaps is False, then hilltop-py assumes the former and removes data between gaps. When in doubt, use the default of True.
 
     Returns
     -------
@@ -407,8 +409,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 if tag1 == 'Gap':
                     gap = gap + 1
                     continue
-                if gap % 2 == 1:
-                    continue
+                if not ignore_gaps:
+                    if gap % 2 == 1:
+                        continue
                 tsdata_list.append([d.find('T').text, d.find('Value').text.encode('ascii', 'ignore').decode()])
             data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
     elif datatype in ['SimpleTimeSeries', 'MeterReading']:
@@ -419,8 +422,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             if tag1 == 'Gap':
                 gap = gap + 1
                 continue
-            if gap % 2 == 1:
-                continue
+            if not ignore_gaps:
+                if gap % 2 == 1:
+                    continue
 
             if quality_codes:
                 tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode(), d.find('Q1').text.encode('ascii', 'ignore').decode()])
@@ -444,8 +448,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             if tag1 == 'Gap':
                 gap = gap + 1
                 continue
-            if gap % 2 == 1:
-                continue
+            if not ignore_gaps:
+                if gap % 2 == 1:
+                    continue
             tsdata_list.append([d.find('T').text, int(d.find(g_type['row']).text.encode('ascii', 'ignore').decode()) * g_type['multiplier']])
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
 
