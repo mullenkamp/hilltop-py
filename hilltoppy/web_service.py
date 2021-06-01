@@ -317,7 +317,7 @@ def measurement_list_all(base_url, hts):
     return mtype_df
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False, tstype=None):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False, tstype=None, ignore_gaps=True):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -349,6 +349,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         Should the quality codes get returned?
     tstype : str
         The timeseries type, one of Standard, Check or Quality
+    ignore_gaps : bool
+        Should gaps be ignored when pulling out the data? Different organisations handle gap tagging differently. Some put gap tags at the beginning and end of a gap, while others put only a single gap tag. If ignore_gaps is False, then hilltop-py assumes the former and removes data between gaps. When in doubt, use the default of True.
 
     Returns
     -------
@@ -407,8 +409,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 if tag1 == 'Gap':
                     gap = gap + 1
                     continue
-                if gap % 2 == 1:
-                    continue
+                if not ignore_gaps:
+                    if gap % 2 == 1:
+                        continue
                 tsdata_list.append([d.find('T').text, d.find('Value').text.encode('ascii', 'ignore').decode()])
             data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
     elif datatype in ['SimpleTimeSeries', 'MeterReading']:
@@ -419,8 +422,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             if tag1 == 'Gap':
                 gap = gap + 1
                 continue
-            if gap % 2 == 1:
-                continue
+            if not ignore_gaps:
+                if gap % 2 == 1:
+                    continue
 
             if quality_codes:
                 tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode(), d.find('Q1').text.encode('ascii', 'ignore').decode()])
@@ -444,8 +448,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             if tag1 == 'Gap':
                 gap = gap + 1
                 continue
-            if gap % 2 == 1:
-                continue
+            if not ignore_gaps:
+                if gap % 2 == 1:
+                    continue
             tsdata_list.append([d.find('T').text, int(d.find(g_type['row']).text.encode('ascii', 'ignore').decode()) * g_type['multiplier']])
         data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
 
@@ -458,33 +463,33 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
     ### If detection limit values should be estimated
     if isinstance(dtl_method, str):
         if data_df['Value'].dtype == 'object':
-            less1 = data_df['Value'].str.contains('<')
-            if less1.sum() > 0:
-                less1.loc[less1.isnull()] = False
-                data_df = data_df.copy()
-                data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
-                data_df['Value'] = data_df['Value'].astype('float32')
-                if dtl_method == 'trend':
-                    df1 = data_df.loc[less1]
-                    count1 = len(data_df)
-                    count_dtl = len(df1)
-                    count_dtl_val = df1['Value'].nunique()
-                    dtl_ratio = np.round(count_dtl / float(count1), 2)
-
-                    if dtl_ratio > 0.7:
-                        print('More than 70% of the values are less then the detection limit! Be careful...')
-
-                    if (dtl_ratio >= 0.4) or (count_dtl_val != 1):
-                        dtl_val = df1['Value'].max()
-                        data_df.loc[(data_df['Value'] < dtl_val) | less1, 'Value'] = dtl_val
-
-        if data_df['Value'].dtype == 'object':
             greater1 = data_df['Value'].str.contains('>')
             if greater1.sum() > 0:
                 greater1.loc[greater1.isnull()] = False
                 data_df = data_df.copy()
                 data_df.loc[greater1, 'Value'] = pd.to_numeric(data_df.loc[greater1, 'Value'].str.replace('>', ''), errors='coerce') * 2
-                data_df['Value'] = data_df['Value'].astype('float32')
+            data_df['Value'] = pd.to_numeric(data_df['Value'], errors='ignore')
+
+        if data_df['Value'].dtype == 'object':
+            less1 = data_df['Value'].str.contains('<')
+            if less1.sum() > 0:
+                less1.loc[less1.isnull()] = False
+                data_df = data_df.copy()
+                data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
+            data_df['Value'] = pd.to_numeric(data_df['Value'], errors='coerce')
+            if (dtl_method == 'trend') and (less1.sum() > 0):
+                df1 = data_df.loc[less1]
+                count1 = len(data_df)
+                count_dtl = len(df1)
+                count_dtl_val = df1['Value'].nunique()
+                dtl_ratio = np.round(count_dtl / float(count1), 2)
+
+                if dtl_ratio > 0.7:
+                    print('More than 70% of the values are less then the detection limit! Be careful...')
+
+                if (dtl_ratio >= 0.4) or (count_dtl_val != 1):
+                    dtl_val = df1['Value'].max()
+                    data_df.loc[(data_df['Value'] < dtl_val) | less1, 'Value'] = dtl_val
 
     ### Add in additional site column
     data_df['Site'] = site
