@@ -308,7 +308,7 @@ def measurement_list_all(base_url, hts):
     sites = site_list(base_url, hts)
 
     mtype_list = []
-    for s in sites:
+    for s in sites.SiteName:
 #        print(s)
         m1 = measurement_list(base_url, hts, s)
         mtype_list.append(m1)
