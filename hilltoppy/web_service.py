@@ -34,7 +34,8 @@ gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
                 'Stage Change [Gauging Results]': {'row': 'I12', 'multiplier': 1},
                 'Method': {'row': 'I13', 'multiplier': 1},
                 'Number Verts.': {'row': 'I14', 'multiplier': 1},
-                'Gauge Num.': {'row': 'I15', 'multiplier': 1}}
+                'Gauge Num.': {'row': 'I15', 'multiplier': 1},
+                'Stage [Gauging Results]': {'row': 'I1', 'multiplier': 0.001}}
 
 
 ### Functions
