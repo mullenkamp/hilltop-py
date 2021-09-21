@@ -20,25 +20,25 @@ test_data1 = dict(
     dtl_method = 'trend'
     )
 
-test_data2 = dict(
-    base_url = 'https://data.hbrc.govt.nz/Envirodata',
-    hts = 'ContinuousArchive.hts',
-    site = 'Well.16772 Ngatarawa Rd',
-    measurement = 'Elevation Above Sea Level[Recorder Water Level]',
-    from_date = '2018-10-13',
-    to_date = '2018-11-01'
-    )
+# test_data2 = dict(
+#     base_url = 'https://data.hbrc.govt.nz/Envirodata',
+#     hts = 'ContinuousArchive.hts',
+#     site = 'Well.16772 Ngatarawa Rd',
+#     measurement = 'Elevation Above Sea Level[Recorder Water Level]',
+#     from_date = '2018-10-13',
+#     to_date = '2018-11-01'
+#     )
 
 
 ### Tests
 
-@pytest.mark.parametrize('data', [test_data1, test_data2])
+@pytest.mark.parametrize('data', [test_data1])
 def test_site_list(data):
     sites = site_list(data['base_url'], data['hts'], True)
     assert len(sites) > 1000
 
 
-@pytest.mark.parametrize('data', [test_data1, test_data2])
+@pytest.mark.parametrize('data', [test_data1])
 def test_measurement_list(data):
     mtype_df1 = measurement_list(data['base_url'], data['hts'], data['site'])
     assert len(mtype_df1) > 6
@@ -50,7 +50,7 @@ def test_wq_sample_parameter_list(data):
     assert len(mtype_df2) > 10
 
 
-@pytest.mark.parametrize('data', [test_data1, test_data2])
+@pytest.mark.parametrize('data', [test_data1])
 def test_get_data1(data):
     tsdata1 = get_data(data['base_url'], data['hts'], data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'])
     assert len(tsdata1) > 80
