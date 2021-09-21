@@ -10,7 +10,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 name = 'hilltop-py'
 main_package = 'hilltoppy'
 # datasets = 'datasets'
-version = '1.4.17'
+version = '1.5.0'
 descrip = 'Functions to access Hilltop data'
 
 # The below code is for readthedocs. To have sphinx/readthedocs interact with
@@ -109,7 +109,7 @@ setup(
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords='hydstra',  # Optional
+    keywords='hilltop',  # Optional
 
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
