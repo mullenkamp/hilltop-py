@@ -26,7 +26,7 @@ test_data2 = dict(
     site = 'Well.16772 Ngatarawa Rd',
     measurement = 'Elevation Above Sea Level[Recorder Water Level]',
     from_date = '2018-10-13',
-    to_date = '2019-04-13'
+    to_date = '2018-11-01'
     )
 
 
