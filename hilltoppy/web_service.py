@@ -9,9 +9,10 @@ Created on Tue May 29 10:12:11 2018
 #    from lxml import etree as ET
 #except ImportError:
 import xml.etree.ElementTree as ET
-import requests
 import pandas as pd
 import numpy as np
+import urllib.parse
+import urllib.request
 
 ### Parameters
 
@@ -82,60 +83,56 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     ### Check base parameters
 
     if not base_url.endswith('/'):
-        base_url = base_url + '/'
+        base_url += '/'
     if not hts.endswith('.hts'):
         raise ValueError('The hts file must end with .hts')
     if request not in available_requests:
         raise ValueError('request must be one of ' + str(available_requests))
 
-    ### Make the first part of the url
-    url = base_url + hts + '?Service=Hilltop&Request=' + request
+    ### Collect data for a URL in a dict
+    data = {'Service': 'Hilltop', 'Request': request}
 
     ### Ready the others
-    if isinstance(site, (int, float, str)):
-        url = url + '&Site=' + requests.utils.quote(str(site))
-    if isinstance(measurement, str):
-        url = url + '&Measurement=' + requests.utils.quote(measurement)
-#    if isinstance(collection, str):
-#        url = url + '&Collection=' + requests.utils.quote(collection)
+    if site is not None:
+        data['Site'] = site
+    if measurement is not None:
+        data['Measurement'] = measurement
+#    if collection is not None:
+#        data['Collection'] = collection
     if isinstance(site_parameters, list):
-        url = url + '&SiteParameters=' + requests.utils.quote(','.join(site_parameters))
-    if isinstance(location, (str, bool)) and (request == 'SiteList'):
-        if isinstance(location, bool):
-            if location:
-                url = url + '&Location=Yes'
-        else:
-            url = url + '&Location=' + location
-    if quality_codes and (request == 'GetData'):
-        url = url + '&ShowQuality=Yes'
-
-    if tstype and (request == 'GetData'):
-        if tstype == 'Standard':
-            url = url + '&tsType=StdSeries'
-        elif tstype == 'Quality':
-            url = url + '&tsType=StdQualSeries'
-        elif tstype == 'Check':
-            url = url + '&tsType=CheckSeries'
-
-    ### Time interval goes last!
+        data['SiteParameters'] = ','.join(site_parameters)
+    if request == 'SiteList':
+        if location is True:
+            data['Location'] = 'Yes'
+        elif isinstance(location, str):
+            data['Location'] = location
     if request == 'GetData':
-        if isinstance(agg_method, str):
-            url = url + '&Method=' + requests.utils.quote(agg_method)
-        if isinstance(agg_interval, str):
-            url = url + '&Interval=' + requests.utils.quote(agg_interval)
-        if isinstance(from_date, str):
-            url = url + '&TimeInterval=' + from_date
-        else:
-            url = url + '&TimeInterval=1800-01-01'
-        if isinstance(to_date, str):
-            url = url + '/' + to_date
-        else:
-            url = url + '/now'
-        if isinstance(alignment, str):
-            url = url + '&Alignment=' + alignment
+        if quality_codes:
+            data['ShowQuality'] = 'Yes'
+        if tstype == 'Standard':
+            data['tsType'] = 'StdSeries'
+        elif tstype == 'Quality':
+            data['tsType'] = 'StdQualSeries'
+        elif tstype == 'Check':
+            data['tsType'] = 'CheckSeries'
+
+        ### Time interval goes last!
+        if agg_method is not None:
+            data['Method'] = agg_method
+        if agg_interval is not None:
+            data['Interval'] = agg_interval
+        if from_date is None:
+            from_date = '1800-01-01'
+        if to_date is None:
+            to_date = 'now'
+        data['TimeInterval'] = str(from_date) + '/' + str(to_date)
+        if alignment is not None:
+            data['Alignment'] = alignment
+
+    encoded_data = urllib.parse.urlencode(data, quote_via=urllib.parse.quote)
 
     ### return
-    return url
+    return base_url + hts + '?' + encoded_data
 
 
 def site_list(base_url, hts, location=None, measurement=None):
@@ -156,8 +153,8 @@ def site_list(base_url, hts, location=None, measurement=None):
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement)
-    resp = requests.get(url, timeout=300)
-    tree1 = ET.fromstring(resp.content)
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
     site_tree = tree1.findall('Site')
     if isinstance(location, (str, bool)):
         sites_dict = {}
@@ -222,8 +219,8 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
     url = build_url(base_url, hts, 'MeasurementList', site, measurement)
 
     ### Request data and load in xml
-    resp = requests.get(url, timeout=300)
-    tree1 = ET.fromstring(resp.content)
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     data_sources = tree1.findall('DataSource')
@@ -357,10 +354,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
     """
     ### Make url
     url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype)
-
     ### Request data and load in xml
-    resp = requests.get(url, timeout=300)
-    tree1 = ET.fromstring(resp.content)
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     meas1 = tree1.find('Measurement')
@@ -536,8 +532,8 @@ def wq_sample_parameter_list(base_url, hts, site):
     url = build_url(base_url, hts, 'GetData', site, 'WQ Sample')
 
     ### Request data and load in xml
-    resp = requests.get(url, timeout=300)
-    tree1 = ET.fromstring(resp.content)
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     meas1 = tree1.find('Measurement')

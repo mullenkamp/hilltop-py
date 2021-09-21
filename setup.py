@@ -19,7 +19,7 @@ descrip = 'Functions to access Hilltop data'
 if os.environ.get('READTHEDOCS', False) == 'True':
     INSTALL_REQUIRES = []
 else:
-    INSTALL_REQUIRES = ['pandas', 'requests']
+    INSTALL_REQUIRES = ['pandas']
 
 # Get the long description from the README file
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:

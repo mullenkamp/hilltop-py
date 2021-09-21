@@ -37,7 +37,6 @@ requirements:
   run:
     - python
     - pandas
-    - requests
 
 test:
   imports:

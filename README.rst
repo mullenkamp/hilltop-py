@@ -5,7 +5,7 @@ This git repository contains the Hilltop Python tools and associated documentati
 
 Documentation
 --------------
-The primary documentation for the package can be found `here <http://hilltop-py.readthedocs.io>`_.
+The primary documentation for the package can be found `here <https://hilltop-py.readthedocs.io>`_.
 
 Installation
 ------------
@@ -17,4 +17,4 @@ or::
 
   conda install -c mullenkamp hilltop-py
 
-The main dependencies are `Pandas <http://pandas.pydata.org/pandas-docs/stable/>`_, `pywin32 <https://github.com/mhammond/pywin32>`_, and `requests <http://docs.python-requests.org>`_.
+The main dependency is `pandas <https://pandas.pydata.org/docs/>`_. `pywin32 <https://github.com/mhammond/pywin32>`_ is a dependency if the user wishes to use the COM module, but it is not installed by default.
