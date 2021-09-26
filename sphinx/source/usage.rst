@@ -50,6 +50,9 @@ The function names are based on the associated Hilltop function names from the C
   sites_out2 = ws.site_list(base_url, hts, location=True)
   sites_out2.head()
 
+  collection = ws.collection_list(base_url, hts)
+  collection.head()
+
   meas_df = ws.measurement_list(base_url, hts, site)
   meas_df.head()
 
