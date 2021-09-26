@@ -16,7 +16,7 @@ import urllib.request
 
 ### Parameters
 
-available_requests = ['SiteList', 'MeasurementList', 'GetData']
+available_requests = ['SiteList', 'MeasurementList', 'CollectionList', 'GetData']
 
 gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
                 'Flow [Gauging Results]': {'row': 'I2', 'multiplier': 0.001},
@@ -39,7 +39,7 @@ gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False, tstype=None):
+def build_url(base_url, hts, request, site=None, measurement=None, collection=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False, tstype=None):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -55,6 +55,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
         The site to be extracted.
     measurement : str or None
         The measurement type name.
+    collection : str or None
+        The collection name.
     from_date : str or None
         The start date in the format 2001-01-01. None will put it to the beginning of the time series.
     to_date : str or None
@@ -97,8 +99,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
         data['Site'] = site
     if measurement is not None:
         data['Measurement'] = measurement
-#    if collection is not None:
-#        data['Collection'] = collection
+    if collection is not None:
+        data['Collection'] = collection
     if isinstance(site_parameters, list):
         data['SiteParameters'] = ','.join(site_parameters)
     if request == 'SiteList':
@@ -135,7 +137,46 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     return base_url + hts + '?' + encoded_data
 
 
-def site_list(base_url, hts, location=None, measurement=None):
+def collection_list(base_url, hts):
+    """
+    CollectionList request function. Returns a frame of collection and site names associated with the hts file.
+
+    Parameters
+    ----------
+    base_url : str
+        root url str
+    hts : str
+        hts file name including the .hts extension.
+
+    Returns
+    -------
+    DataFrame
+    """
+    url = build_url(base_url, hts, 'CollectionList')
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
+    collection_tree = tree1.findall('Collection')
+    collection_list = []
+    for colitem in collection_tree:
+        colname = colitem.attrib['Name']
+        sitename_list = []
+        measurement_list = []
+        filename_list = []
+        for site in colitem:
+            row = dict([(col.tag, col.text) for col in site])
+            sitename_list.append(row['SiteName'])
+            measurement_list.append(row['Measurement'])
+            filename_list.append(row['Filename'])
+        col_df = pd.DataFrame({'SiteName': sitename_list})
+        col_df['Measurement'] = measurement_list
+        col_df['Filename'] = filename_list
+        col_df.insert(0, "CollectionName", colname)
+        collection_list.append(col_df)
+    collection_df = pd.concat(collection_list).reset_index(drop=True)
+    return collection_df
+
+
+def site_list(base_url, hts, location=None, measurement=None, collection=None):
     """
     SiteList request function. Returns a list of sites associated with the hts file.
 
@@ -147,12 +188,14 @@ def site_list(base_url, hts, location=None, measurement=None):
         hts file name including the .hts extension.
     location : str or bool
         Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
+    collection : str
+        Get site list via a collection.
 
     Returns
     -------
     DataFrame
     """
-    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement)
+    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement, collection=collection)
     with urllib.request.urlopen(url) as req:
         tree1 = ET.parse(req)
     site_tree = tree1.findall('Site')
