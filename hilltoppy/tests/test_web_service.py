@@ -10,16 +10,16 @@ from hilltoppy.web_service import measurement_list, site_list, collection_list, 
 
 ### Parameters
 
-test_data1 = dict(
-    base_url = 'http://data.ecan.govt.nz/',
-    hts = 'WQAll.hts',
-    site = 'SQ31045',
-    collection = 'LWRPLakes',
-    measurement = 'Total Phosphorus',
-    from_date = '1983-11-22 10:50',
-    to_date = '2018-04-13 14:05',
-    dtl_method = 'trend'
-    )
+# test_data1 = dict(
+#     base_url = 'http://data.ecan.govt.nz/',
+#     hts = 'WQAll.hts',
+#     site = 'SQ31045',
+#     collection = 'LWRPLakes',
+#     measurement = 'Total Phosphorus',
+#     from_date = '1983-11-22 10:50',
+#     to_date = '2018-04-13 14:05',
+#     dtl_method = 'trend'
+#     )
 
 # test_data2 = dict(
 #     base_url = 'https://data.hbrc.govt.nz/Envirodata',
@@ -31,6 +31,16 @@ test_data1 = dict(
 #     to_date = '2018-11-01'
 #     )
 
+test_data1 = dict(
+    base_url = 'http://hilltop.gw.govt.nz/',
+    hts = 'data.hts',
+    site = 'Akatarawa River at Hutt Confluence',
+    collection = 'WQ / Rivers and Streams',
+    measurement = 'Total Phosphorus',
+    from_date = '2012-01-22 10:50',
+    to_date = '2018-04-13 14:05',
+    dtl_method = 'trend'
+    )
 
 ### Tests
 
@@ -55,36 +65,34 @@ def test_site_list_with_collection(data):
 @pytest.mark.parametrize('data', [test_data1])
 def test_wq_sample_parameter_list(data):
     mtype_df2 = wq_sample_parameter_list(data['base_url'], data['hts'], data['site'])
-    assert len(mtype_df2) > 10
+    assert len(mtype_df2) > 6
 
 
 @pytest.mark.parametrize('data', [test_data1])
 def test_collection_list(data):
     cl = collection_list(data['base_url'], data['hts'])
     assert len(cl) > 180
-    assert list(cl.columns) == \
-        ['CollectionName', 'SiteName', 'Measurement', 'Filename']
 
 
 @pytest.mark.parametrize('data', [test_data1])
 def test_get_data1(data):
     tsdata1 = get_data(data['base_url'], data['hts'], data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'])
-    assert len(tsdata1) > 80
+    assert len(tsdata1) > 70
 
 
 @pytest.mark.parametrize('data', [test_data1])
 def test_get_data2(data):
     tsdata2, extra2 = get_data(data['base_url'], data['hts'], data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'], parameters=True)
-    assert (len(tsdata2) > 80) & (len(extra2) > 300)
+    assert (len(tsdata2) > 70) & (len(extra2) > 300)
 
 
 @pytest.mark.parametrize('data', [test_data1])
 def test_get_data3(data):
     tsdata3 = get_data(data['base_url'], data['hts'], data['site'], 'WQ Sample', from_date=data['from_date'], to_date=data['to_date'])
-    assert len(tsdata3) > 800
+    assert len(tsdata3) > 300
 
 
 @pytest.mark.parametrize('data', [test_data1])
 def test_get_data4(data):
     tsdata4, extra4 = get_data(data['base_url'], data['hts'], data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'], parameters=True, dtl_method=data['dtl_method'])
-    assert (len(tsdata4) > 80) & (len(extra4) > 300) & (tsdata4.Value.dtype == np.number)
+    assert (len(tsdata4) > 70) & (len(extra4) > 300) & ('float' in tsdata4.Value.dtype.name)
