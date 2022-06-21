@@ -156,23 +156,22 @@ def collection_list(base_url, hts):
     with urllib.request.urlopen(url) as req:
         tree1 = ET.parse(req)
     collection_tree = tree1.findall('Collection')
-    collection_list = []
-    for colitem in collection_tree:
-        colname = colitem.attrib['Name']
-        sitename_list = []
-        measurement_list = []
-        filename_list = []
-        for site in colitem:
-            row = dict([(col.tag, col.text) for col in site])
-            sitename_list.append(row['SiteName'])
-            measurement_list.append(row['Measurement'])
-            filename_list.append(row['Filename'])
-        col_df = pd.DataFrame({'SiteName': sitename_list})
-        col_df['Measurement'] = measurement_list
-        col_df['Filename'] = filename_list
-        col_df.insert(0, "CollectionName", colname)
-        collection_list.append(col_df)
-    collection_df = pd.concat(collection_list).reset_index(drop=True)
+
+    if collection_tree:
+        collection_list = []
+        for colitem in collection_tree:
+            colname = colitem.attrib['Name']
+            data_list = []
+            for site in colitem:
+                row = dict([(col.tag, col.text) for col in site])
+                data_list.append(row)
+            col_df = pd.DataFrame(data_list)
+            col_df['CollectionName'] = colname
+            collection_list.append(col_df)
+        collection_df = pd.concat(collection_list).reset_index(drop=True)
+    else:
+        collection_df = pd.DataFrame(columns=['SiteName', 'Measurement', 'CollectionName', 'Filename'])
+
     return collection_df
 
 
