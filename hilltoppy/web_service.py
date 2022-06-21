@@ -39,7 +39,7 @@ gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False, tstype=None):
+def build_url(base_url, hts, request, site=None, measurement=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False, tstype=None, collection=None):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -72,7 +72,9 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     quality_codes : bool
         Should the quality codes get returned from the GetData function.
     tstype : str
-        The timeseries type, one of Standard, Check or Quality
+        The timeseries type, one of Standard, Check or Quality.
+    collection : str
+        The Hilltop collection to query.
 
     Returns
     -------
@@ -95,10 +97,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     ### Ready the others
     if site is not None:
         data['Site'] = site
-    if measurement is not None:
+    if isinstance(measurement, str):
         data['Measurement'] = measurement
-#    if collection is not None:
-#        data['Collection'] = collection
     if isinstance(site_parameters, list):
         data['SiteParameters'] = ','.join(site_parameters)
     if request == 'SiteList':
@@ -106,6 +106,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
             data['Location'] = 'Yes'
         elif isinstance(location, str):
             data['Location'] = location
+        if isinstance(collection, str):
+            data['Collection'] = collection
     if request == 'GetData':
         if quality_codes:
             data['ShowQuality'] = 'Yes'
@@ -135,9 +137,9 @@ def build_url(base_url, hts, request, site=None, measurement=None, from_date=Non
     return base_url + hts + '?' + encoded_data
 
 
-def site_list(base_url, hts, location=None, measurement=None):
+def site_list(base_url, hts, location=None, measurement=None, collection=None):
     """
-    SiteList request function. Returns a list of sites associated with the hts file.
+    SiteList request function. Returns a DataFrame of sites associated with the hts file.
 
     Parameters
     ----------
@@ -147,12 +149,14 @@ def site_list(base_url, hts, location=None, measurement=None):
         hts file name including the .hts extension.
     location : str or bool
         Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
+    collection : str
+        The Hilltop collection to query.
 
     Returns
     -------
     DataFrame
     """
-    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement)
+    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement, collection=collection)
     with urllib.request.urlopen(url) as req:
         tree1 = ET.parse(req)
     site_tree = tree1.findall('Site')
