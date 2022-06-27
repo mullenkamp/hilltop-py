@@ -12,18 +12,22 @@ The web service calls are simpler and more straightforward than the other two op
 
 Data access
 ~~~~~~~~~~~
-The function names are based on the associated Hilltop function names from the COM module. There is also an additional function specific to water quality samples. Below is an actual working example!
+The function names are based on the associated Hilltop function names from the COM module. There is also an additional function specific to water quality samples. Below are an actual working examples!
+
+Import the module and set the appropriate parameters.
+
 
 .. code:: python
 
     from hilltoppy import web_service as ws
 
-    base_url = 'http://data.ecan.govt.nz/'
-    hts = 'WQAll.hts'
-    site = 'SQ31045'
+    base_url = 'http://hilltop.gw.govt.nz/'
+    hts = 'data.hts'
+    site = 'Akatarawa River at Hutt Confluence'
+    collection = 'WQ / Rivers and Streams'
     measurement = 'Total Phosphorus'
-    from_date = '1983-11-22'
-    to_date = '2018-04-13'
+    from_date = '2012-01-22 10:50'
+    to_date = '2018-04-13 14:05'
     dtl_method = 'trend'
 
 .. ipython:: python
@@ -34,13 +38,18 @@ The function names are based on the associated Hilltop function names from the C
 
    pd.options.display.max_columns = 5
 
-   base_url = 'http://data.ecan.govt.nz/'
-   hts = 'WQAll.hts'
-   site = 'SQ31045'
+   base_url = 'http://hilltop.gw.govt.nz/'
+   hts = 'data.hts'
+   site = 'Akatarawa River at Hutt Confluence'
+   collection = 'WQ / Rivers and Streams'
    measurement = 'Total Phosphorus'
-   from_date = '1983-11-22'
-   to_date = '2018-04-13'
+   from_date = '2012-01-22 10:50'
+   to_date = '2018-04-13 14:05'
    dtl_method = 'trend'
+
+
+All data in Hilltop are stored in hts files. The top level objects in Hilltop are Sites, which can be queried by calling the site_list function. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the NZTMX and NZTMY geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longtitude. There are other optional input parameters to site_list as well.
+
 
 .. ipython:: python
 
@@ -50,11 +59,37 @@ The function names are based on the associated Hilltop function names from the C
   sites_out2 = ws.site_list(base_url, hts, location=True)
   sites_out2.head()
 
-  collection = ws.collection_list(base_url, hts)
-  collection.head()
+  sites_out3 = ws.site_list(base_url, hts, location='LatLong', measurement=measurement)
+  sites_out3.head()
+
+
+A Collection groups one or many Sites together and has its own function to return a dataframe of all the Sites and associated Collections. Note that not all hts files (and organisations) have collections.
+
+
+.. ipython:: python
+
+  collection1 = ws.collection_list(base_url, hts)
+  collection1.head()
+
+  sites_out4 = ws.site_list(base_url, hts, collection=collection)
+  sites_out4.head()
+
+
+The next step is to determine what types of Measurements are associated with the Sites. In Hilltop, a Measurement is also associated to a Data Source. Conceptually, the Data Source represents the actual observation or measurement from the source, while the Measurement is a value derived from the Data Source. In many cases, the Measurement and the Data Source are the same, but there are instances where there are multiple Measurements per Data Source. For example, a Data Source of "Water Level" (which normally represents a surface water level) may have a Measurement of both Water Level and Flow (since flow can be derived from water level). Hilltop also has the concept of Virtual Measurements. Virtual Measurements do not have data directly stored in the hts files. Rather, they simply store the equation to convert an existing Measurement (that does contain data) into a Virtual Measurement when the user requests the data. This reduces data storage at a very minor overhead computational cost.
+
+In Hilltop, you must make a measurement_list function request to get all of the Data Sources and the associated Measurements.
+
+.. ipython:: python
+
 
   meas_df = ws.measurement_list(base_url, hts, site)
   meas_df.head()
+
+
+Once you know the Site Name and Measurement Name you want time series data for, then you make a request via the get_data function. The get_data function has a variety of parameters. Check the docstrings or package references for more details.
+
+.. ipython:: python
+
 
   tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date)
   tsdata.head()
@@ -73,7 +108,12 @@ The function names are based on the associated Hilltop function names from the C
   wq_sample_df = ws.wq_sample_parameter_list(base_url, hts, site)
   wq_sample_df.head()
 
-  # For debugging purposes - copy-paste output into internet browser
+
+If you run into an issue with your Hilltop server, you can debug via the browser by using the build_url function.
+
+.. ipython:: python
+
+
   url = ws.build_url(base_url, hts, 'MeasurementList', site)
   print(url)
 
