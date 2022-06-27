@@ -48,7 +48,7 @@ Import the module and set the appropriate parameters.
    dtl_method = 'trend'
 
 
-All data in Hilltop are stored in hts files. The top level objects in Hilltop are Sites, which can be queried by calling the site_list function. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the NZTMX and NZTMY geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longtitude. There are other optional input parameters to site_list as well.
+All data in Hilltop are stored in hts files. The top level objects in Hilltop are Sites, which can be queried by calling the site_list function. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the Easting and Northing geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longitude. There are other optional input parameters to site_list as well.
 
 
 .. ipython:: python
@@ -59,7 +59,8 @@ All data in Hilltop are stored in hts files. The top level objects in Hilltop ar
   sites_out2 = ws.site_list(base_url, hts, location=True)
   sites_out2.head()
 
-  sites_out3 = ws.site_list(base_url, hts, location='LatLong', measurement=measurement)
+  sites_out3 = ws.site_list(base_url, hts, location='LatLong',
+                            measurement=measurement)
   sites_out3.head()
 
 
@@ -75,7 +76,7 @@ A Collection groups one or many Sites together and has its own function to retur
   sites_out4.head()
 
 
-The next step is to determine what types of Measurements are associated with the Sites. In Hilltop, a Measurement is also associated to a Data Source. Conceptually, the Data Source represents the actual observation or measurement from the source, while the Measurement is a value derived from the Data Source. In many cases, the Measurement and the Data Source are the same, but there are instances where there are multiple Measurements per Data Source. For example, a Data Source of "Water Level" (which normally represents a surface water level) may have a Measurement of both Water Level and Flow (since flow can be derived from water level). Hilltop also has the concept of Virtual Measurements. Virtual Measurements do not have data directly stored in the hts files. Rather, they simply store the equation to convert an existing Measurement (that does contain data) into a Virtual Measurement when the user requests the data. This reduces data storage at a very minor overhead computational cost.
+The next step is to determine what types of Measurements are associated with the Sites. In Hilltop, a Measurement is also associated to a Data Source. Conceptually, the Data Source represents the actual observation or measurement from the source, while the Measurement is a value derived from the Data Source. In many cases, the Measurement and the Data Source are the same, but there are instances where there are multiple Measurements per Data Source. For example, a Data Source of "Water Level" (which normally represents a surface water level) may have a Measurement of both Water Level and Flow (since flow can be derived from water level). Hilltop also has the concept of Virtual Measurements. Virtual Measurements do not have data directly stored in the hts files. Rather, Hilltop simply stores the equation to convert an existing Measurement (that does contain data) into a Virtual Measurement when the user requests the data. This reduces data storage with a very minor overhead computational cost.
 
 In Hilltop, you must make a measurement_list function request to get all of the Data Sources and the associated Measurements.
 
@@ -86,16 +87,17 @@ In Hilltop, you must make a measurement_list function request to get all of the 
   meas_df.head()
 
 
-Once you know the Site Name and Measurement Name you want time series data for, then you make a request via the get_data function. The get_data function has a variety of parameters. Check the docstrings or package references for more details.
+Once you know the Site Name and Measurement Name you want time series data for, then you make a request via the get_data function. The get_data function has a variety of parameters. Check the doc strings or package references for more details.
 
 .. ipython:: python
 
 
-  tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date)
+  tsdata = ws.get_data(base_url, hts, site, measurement, from_date=from_date,
+                        to_date=to_date)
   tsdata.head()
 
-  tsdata1 = ws.get_data(base_url, hts, site, measurement, from_date=from_date, to_date=to_date,
-                        dtl_method=dtl_method)
+  tsdata1 = ws.get_data(base_url, hts, site, measurement, from_date=from_date,
+                        to_date=to_date, dtl_method=dtl_method)
   tsdata1.head()
 
   tsdata2, extra2 = ws.get_data(base_url, hts, site, measurement, parameters=True)
@@ -120,7 +122,7 @@ If you run into an issue with your Hilltop server, you can debug via the browser
 
 COM module
 ------------
-The following documentation describes how to set up and use the COM module functions.
+The following documentation describes how to set up and use the COM module functions. The COM module is no longer maintained!
 
 Install pywin32
 ~~~~~~~~~~~~~~~
@@ -165,7 +167,7 @@ The function names are based on the associated Hilltop function names. Since fun
 
 Native Python module
 --------------------
-The following documentation describes how to set up and use the module functions built upon the native python module.
+The following documentation describes how to set up and use the module functions built upon the native python module. The Native Hilltop Python module is no longer maintained!
 
 Python path to Hilltop.pyd
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
