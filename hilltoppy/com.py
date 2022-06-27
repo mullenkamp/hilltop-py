@@ -6,9 +6,9 @@ Hilltop uses a fixed base date as 1940-01-01, while the standard unix/POSIT base
 try:
     from win32com.client import Dispatch, pywintypes, makepy
 except:
-    print('Install pywin32 or com functions will not work')
+    pass
 from pandas import concat, to_datetime, to_numeric, DataFrame, merge
-from hilltoppy.util import pytime_to_datetime, time_switch
+from hilltoppy.utils import pytime_to_datetime, time_switch
 
 ######################################################
 #### COM access method

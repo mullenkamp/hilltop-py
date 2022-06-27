@@ -6,7 +6,7 @@ Created on Wed May 30 12:05:46 2018
 """
 import pytest
 import numpy as np
-from hilltoppy.web_service import measurement_list, site_list, collection_list, get_data, wq_sample_parameter_list
+from hilltoppy.web_service import measurement_list, site_list, collection_list, get_data, wq_sample_parameter_list, site_info
 
 ### Parameters
 
@@ -31,6 +31,15 @@ from hilltoppy.web_service import measurement_list, site_list, collection_list, 
 #     to_date = '2018-11-01'
 #     )
 
+# test_data2 = dict(
+#     base_url = 'https://data.hbrc.govt.nz/Envirodata',
+#     hts = 'data.hts',
+#     site = 'Akatarawa River at Cemetery',
+#     measurement = 'Flow',
+#     from_date = '2018-10-13',
+#     to_date = '2018-11-01'
+#     )
+
 test_data1 = dict(
     base_url = 'http://hilltop.gw.govt.nz/',
     hts = 'data.hts',
@@ -48,6 +57,12 @@ test_data1 = dict(
 def test_site_list(data):
     sites = site_list(data['base_url'], data['hts'], True)
     assert len(sites) > 1000
+
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_site_info(data):
+    site_data = site_info(data['base_url'], data['hts'], data['site'])
+    assert len(site_data.columns) > 10
 
 
 @pytest.mark.parametrize('data', [test_data1])

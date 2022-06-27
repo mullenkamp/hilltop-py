@@ -4,19 +4,17 @@ Created on Tue May 29 10:12:11 2018
 
 @author: MichaelEK
 """
-
-#try:
-#    from lxml import etree as ET
-#except ImportError:
 import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
 import urllib.parse
 import urllib.request
+from hilltoppy.utils import convert_value
 
+############################################
 ### Parameters
 
-available_requests = ['SiteList', 'MeasurementList', 'CollectionList', 'GetData']
+available_requests = ['SiteList', 'MeasurementList', 'CollectionList', 'GetData', 'SiteInfo']
 
 gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
                 'Flow [Gauging Results]': {'row': 'I2', 'multiplier': 0.001},
@@ -35,7 +33,7 @@ gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
                 'Gauge Num.': {'row': 'I15', 'multiplier': 1},
                 'Stage [Gauging Results]': {'row': 'I1', 'multiplier': 0.001}}
 
-
+########################################
 ### Functions
 
 
@@ -101,9 +99,9 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
         data['Measurement'] = measurement
     if collection is not None:
         data['Collection'] = collection
-    if isinstance(site_parameters, list):
-        data['SiteParameters'] = ','.join(site_parameters)
     if request == 'SiteList':
+        if isinstance(site_parameters, list):
+            data['SiteParameters'] = ','.join(site_parameters)
         if location is True:
             data['Location'] = 'Yes'
         elif isinstance(location, str):
@@ -137,6 +135,86 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
     return base_url + hts + '?' + encoded_data
 
 
+def site_list(base_url, hts, location=None, measurement=None, collection=None, site_parameters=None):
+    """
+    SiteList request function. Returns a list of sites associated with the hts file.
+
+    Parameters
+    ----------
+    base_url : str
+        root url str
+    hts : str
+        hts file name including the .hts extension.
+    location : str or bool
+        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
+    collection : str
+        Get site list via a collection.
+    site_parameters : list
+        A list of the site parameters to be returned with the SiteList request. Make a call to site_info to find all of the possible options.
+
+    Returns
+    -------
+    DataFrame
+    """
+    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
+    site_tree = tree1.findall('Site')
+
+    if site_tree:
+        sites_list = []
+        for s in site_tree:
+            name = s.attrib['Name']
+            site_dict = {'SiteName': name}
+            for data in s:
+                site_dict[data.tag] = convert_value(data.text)
+            sites_list.append(site_dict)
+
+        sites_df = pd.DataFrame(sites_list)
+    else:
+        sites_df = pd.DataFrame(columns=['SiteName'])
+
+    return sites_df
+
+
+def site_info(base_url, hts, site):
+    """
+    SiteInfo request function. Returns all of the site data for a specific site. The Hilltop sites table has tons of fields, so you never know what you're going to get.
+
+    Parameters
+    ----------
+    base_url : str
+        root url str
+    hts : str
+        hts file name including the .hts extension.
+    site : str or None
+        The site to be extracted.
+
+    Returns
+    -------
+    DataFrame
+    """
+    url = build_url(base_url, hts, 'SiteInfo', site=site)
+    with urllib.request.urlopen(url) as req:
+        tree1 = ET.parse(req)
+    site_tree = tree1.find('Site')
+
+    if site_tree is not None:
+        data_dict = {'SiteName': site}
+        for data in site_tree:
+            key = data.tag
+            if data.text is not None:
+                val = convert_value(data.text)
+
+                data_dict[key] = val
+
+        site_df = pd.DataFrame([data_dict])
+    else:
+        site_df = pd.DataFrame(columns=['SiteName'])
+
+    return site_df
+
+
 def collection_list(base_url, hts):
     """
     CollectionList request function. Returns a frame of collection and site names associated with the hts file.
@@ -163,7 +241,7 @@ def collection_list(base_url, hts):
             colname = colitem.attrib['Name']
             data_list = []
             for site in colitem:
-                row = dict([(col.tag, col.text) for col in site])
+                row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site])
                 data_list.append(row)
             col_df = pd.DataFrame(data_list)
             col_df['CollectionName'] = colname
@@ -173,55 +251,6 @@ def collection_list(base_url, hts):
         collection_df = pd.DataFrame(columns=['SiteName', 'Measurement', 'CollectionName', 'Filename'])
 
     return collection_df
-
-
-def site_list(base_url, hts, location=None, measurement=None, collection=None):
-    """
-    SiteList request function. Returns a list of sites associated with the hts file.
-
-    Parameters
-    ----------
-    base_url : str
-        root url str
-    hts : str
-        hts file name including the .hts extension.
-    location : str or bool
-        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
-    collection : str
-        Get site list via a collection.
-
-    Returns
-    -------
-    DataFrame
-    """
-    url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement, collection=collection)
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
-    site_tree = tree1.findall('Site')
-    if isinstance(location, (str, bool)):
-        sites_dict = {}
-        for s in site_tree:
-            site1 = s.attrib['Name']
-            # children = s.getchildren()
-            children = list(s)
-            if len(children) == 2:
-                locs1 = [float(l.text) for l in children]
-                sites_dict.update({site1: locs1})
-            else:
-                sites_dict.update({site1: [np.nan, np.nan]})
-
-        if (location == 'Yes') or (location == True):
-            cols = ['Easting', 'Northing']
-        elif location == 'LatLong':
-            cols = ['lat', 'lon']
-
-        sites_df = pd.DataFrame.from_dict(sites_dict, orient='index', columns=cols)
-        sites_df.index.name = 'SiteName'
-        sites_df.reset_index(inplace=True)
-    else:
-        sites_df = pd.DataFrame([i.attrib['Name'] for i in tree1.findall('Site')], columns=['SiteName'])
-
-    return sites_df
 
 
 def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=False, tstype="Standard"):
@@ -267,7 +296,6 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
         raise ValueError('No results returned from URL request')
     data_sources = tree1.findall('DataSource')
     if not data_sources:
-        print('No data, returning empty DataFrame')
         return pd.DataFrame()
 
     ### Test to see if the site only has a WQ Sample and no other measurment
@@ -284,10 +312,10 @@ def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=Fal
     data_list = []
 
     for d in data_sources:
-        if d.find('TSType') is None:
-            pass
-        elif d.find('TSType').text != 'StdSeries' and tstype != "All":
-            continue
+        # if d.find('TSType') is None:
+        #     pass
+        # elif d.find('TSType').text != 'StdSeries' and tstype != "All":
+        #     continue
         ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in d if c.tag in ds_types}
         m_all = d.findall('Measurement')
         for m in m_all:

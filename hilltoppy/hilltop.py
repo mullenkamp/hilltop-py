@@ -5,9 +5,9 @@ Hilltop read functions.
 try:
     import Hilltop
 except:
-    print('The Hilltop module could not load. Change the python path to where the Hilltop.pyd resides.')
+    pass
 import pandas as pd
-from hilltoppy.util import time_switch
+from hilltoppy.utils import time_switch
 
 #####################################################
 #### New method - might have issues
