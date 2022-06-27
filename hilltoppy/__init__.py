@@ -1,3 +1,1 @@
-from hilltoppy import com
-from hilltoppy import util
-from hilltoppy import web_service
+from hilltoppy import com, utils, web_service

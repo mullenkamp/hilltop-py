@@ -5,11 +5,105 @@ Utility functions for Hilltop functions.
 import os
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, date
 try:
     from configparser import ConfigParser
 except ImportError:
     from ConfigParser import SafeConfigParser as ConfigParser
+# import orjson
+# from typing import List, Optional, Dict, Union, Literal
+# from pydantic import BaseModel, Field, HttpUrl, conint, confloat
+# from enum import Enum
+
+##############################################
+### Data models
+
+
+# class TSType(str, Enum):
+#     """
+#     The time series type according to Hilltop.
+#     """
+#     std_series = 'StdSeries'
+#     std_qual_series = 'StdQualSeries'
+#     check_series = 'CheckSeries'
+#
+#
+# class DataType(str, Enum):
+#     """
+#     The data type according to Hilltop.
+#     """
+#     simple_ts = 'SimpleTimeSeries'
+#     hyd_section = 'HydSection'
+#     hyd_facecard = 'HydFacecard'
+#     gauging_results = 'GaugingResults'
+#     wq_data = 'WQData'
+#     wq_sample = 'WQSample'
+#
+#
+# class Interpolation(str, Enum):
+#     """
+#     The method of Measurement and subsequently the kind of interpolation that should be applied to the Measurements.
+#     """
+#     discrete = 'Discrete'
+#     instant = 'Instant'
+#     incremental = 'Incremental'
+#     event = 'Event'
+#
+#
+# class Measurement(BaseModel):
+#     """
+#
+#     """
+#     MeasurementName: str = Field(..., description='The measurement name associated with the DataSource. The DataSourceName has been appended to the MeasurementName (in the form of MeasurementName [DataSourceName]), because this is the requirement for requests to the Hilltop web server.')
+#     # Item: int = Field(..., description='The Measurement item position in the Data when NumItems in the DataSource > 1.')
+#     Units: str
+#     Precision: int = Field(..., description='The precision of the data as the number of decimal places.')
+#     MeasurementGroup: str = Field(..., description="I've only seen Virtual Measurements so far...")
+#     VMStart: datetime = Field(..., description="The start time of the virtual measurement.")
+#     VMFinish: datetime = Field(..., description="The end time of the virtual measurement.")
+#
+#
+# class DataSource(BaseModel):
+#     """
+#
+#     """
+#     DataSourceName: str
+#     # NumItems: int = Field(..., description='The Number of Measurements grouped per GetData request. If this is greater than 1, then any GetData request to a Measurement will return more than one Measurement Data.')
+#     TSType: TSType
+#     DataType: DataType
+#     Interpolation: Interpolation
+#     From: datetime
+#     To: datetime
+#     Measurements: List[Measurement]
+
+
+##############################################
+### Functions
+
+
+def convert_value(text):
+    """
+
+    """
+    if text is not None:
+        val = text.encode('ascii', 'ignore').decode()
+        if val in ['False', 'True']:
+            val = bool(val)
+        else:
+            try:
+                val = int(val)
+            except:
+                try:
+                    val = float(val)
+                except:
+                    try:
+                        val = pd.to_datetime(val, dayfirst=True)
+                    except:
+                        pass
+    else:
+        val = None
+
+    return val
 
 
 def parse_dsn(dsn_path):
@@ -215,3 +309,9 @@ def proc_ht_use_data(ht_data):
     df3 = df2.groupby(['Site', 'DateTime']).Value.last()
 
     return df3
+
+
+# def orjson_dumps(v, *, default):
+#     # orjson.dumps returns bytes, to match standard json.dumps we need to decode
+#     # return orjson.dumps(v, default=default, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_OMIT_MICROSECONDS | orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_INDENT_2).decode()
+#     return orjson.dumps(v, default=default, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_OMIT_MICROSECONDS | orjson.OPT_SERIALIZE_NUMPY).decode()
