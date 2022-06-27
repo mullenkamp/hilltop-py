@@ -19,6 +19,6 @@ The GitHub repository is found `here <https://github.com/mullenkamp/hilltop-py>`
    :caption: Sections
 
    installation
-   usage
+   usage_v1
    package_references
    license-terms
