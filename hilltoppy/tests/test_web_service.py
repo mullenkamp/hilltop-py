@@ -6,7 +6,7 @@ Created on Wed May 30 12:05:46 2018
 """
 import pytest
 import numpy as np
-from hilltoppy.web_service import measurement_list, site_list, collection_list, get_data, wq_sample_parameter_list, site_info
+from hilltoppy.web_service import measurement_list, site_list, collection_list, get_data, site_info
 
 ### Parameters
 
