@@ -28,13 +28,13 @@ Web service
 
 .. autofunction:: hilltoppy.web_service.site_list
 
+.. autofunction:: hilltoppy.web_service.site_info
+
+.. autofunction:: hilltoppy.web_service.collection_list
+
 .. autofunction:: hilltoppy.web_service.measurement_list
 
-.. autofunction:: hilltoppy.web_service.measurement_list_all
-
 .. autofunction:: hilltoppy.web_service.get_data
-
-.. autofunction:: hilltoppy.web_service.wq_sample_parameter_list
 
 
 API Pages
