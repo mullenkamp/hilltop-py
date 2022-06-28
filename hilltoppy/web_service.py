@@ -4,34 +4,16 @@ Created on Tue May 29 10:12:11 2018
 
 @author: MichaelEK
 """
-import xml.etree.ElementTree as ET
 import pandas as pd
 import numpy as np
 import urllib.parse
-import urllib.request
-from hilltoppy.utils import convert_value
+from hilltoppy.utils import convert_value, DataSource, Measurement, get_hilltop_xml
+import orjson
 
 ############################################
 ### Parameters
 
 available_requests = ['SiteList', 'MeasurementList', 'CollectionList', 'GetData', 'SiteInfo']
-
-gauging_dict = {'Stage': {'row': 'I1', 'multiplier': 0.001},
-                'Flow [Gauging Results]': {'row': 'I2', 'multiplier': 0.001},
-                'Area': {'row': 'I3', 'multiplier': 0.001},
-                'Velocity [Gauging Results]': {'row': 'I4', 'multiplier': 0.001},
-                'Max Depth': {'row': 'I5', 'multiplier': 0.001},
-                'Slope': {'row': 'I6', 'multiplier': 1},
-                'Width': {'row': 'I7', 'multiplier': 0.001},
-                'Hyd Radius': {'row': 'I8', 'multiplier': 0.001},
-                'Wet. Perimeter': {'row': 'I9', 'multiplier': 0.001},
-                'Sed. Conc.': {'row': 'I10', 'multiplier': 1},
-                'Temperature': {'row': 'I11', 'multiplier': 0.1},
-                'Stage Change [Gauging Results]': {'row': 'I12', 'multiplier': 1},
-                'Method': {'row': 'I13', 'multiplier': 1},
-                'Number Verts.': {'row': 'I14', 'multiplier': 1},
-                'Gauge Num.': {'row': 'I15', 'multiplier': 1},
-                'Stage [Gauging Results]': {'row': 'I1', 'multiplier': 0.001}}
 
 ########################################
 ### Functions
@@ -44,7 +26,7 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
     Parameters
     ----------
     base_url : str
-        root url str. e.g. http://wateruse.ecan.govt.nz
+        root Hilltop url str.
     hts : str
         hts file name including the .hts extension. Even if the file to be accessed is a dsn file, it must still have an hts extension for the web service.
     request : str
@@ -107,6 +89,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
         elif isinstance(location, str):
             data['Location'] = location
     if request == 'GetData':
+        # data['Format'] = 'Native'
+
         if quality_codes:
             data['ShowQuality'] = 'Yes'
         if tstype == 'Standard':
@@ -142,7 +126,7 @@ def site_list(base_url, hts, location=None, measurement=None, collection=None, s
     Parameters
     ----------
     base_url : str
-        root url str
+        root Hilltop url str.
     hts : str
         hts file name including the .hts extension.
     location : str or bool
@@ -157,8 +141,8 @@ def site_list(base_url, hts, location=None, measurement=None, collection=None, s
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
+    tree1 = get_hilltop_xml(url)
+
     site_tree = tree1.findall('Site')
 
     if site_tree:
@@ -184,7 +168,7 @@ def site_info(base_url, hts, site):
     Parameters
     ----------
     base_url : str
-        root url str
+        root Hilltop url str.
     hts : str
         hts file name including the .hts extension.
     site : str or None
@@ -195,8 +179,8 @@ def site_info(base_url, hts, site):
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteInfo', site=site)
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
+    tree1 = get_hilltop_xml(url)
+
     site_tree = tree1.find('Site')
 
     if site_tree is not None:
@@ -222,7 +206,7 @@ def collection_list(base_url, hts):
     Parameters
     ----------
     base_url : str
-        root url str
+        root Hilltop url str.
     hts : str
         hts file name including the .hts extension.
 
@@ -231,8 +215,8 @@ def collection_list(base_url, hts):
     DataFrame
     """
     url = build_url(base_url, hts, 'CollectionList')
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
+    tree1 = get_hilltop_xml(url)
+
     collection_tree = tree1.findall('Collection')
 
     if collection_tree:
@@ -246,150 +230,121 @@ def collection_list(base_url, hts):
             col_df = pd.DataFrame(data_list)
             col_df['CollectionName'] = colname
             collection_list.append(col_df)
-        collection_df = pd.concat(collection_list).reset_index(drop=True)
+        collection_df = pd.concat(collection_list).reset_index(drop=True).rename(columns={'Measurement': 'MeasurementName', 'Filename': 'FileName'})
     else:
-        collection_df = pd.DataFrame(columns=['SiteName', 'Measurement', 'CollectionName', 'Filename'])
+        collection_df = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'CollectionName', 'FileName'])
 
     return collection_df
 
 
-def measurement_list(base_url, hts, site, measurement=None, output_bad_sites=False, tstype="Standard"):
+def measurement_list(base_url, hts, site, measurement=None, output='dataframe'):
     """
     Function to query a Hilltop server for the measurement summary of a site.
 
     Parameters
     ----------
     base_url : str
-        root url str. e.g. http://wateruse.ecan.govt.nz
+        root Hilltop url str.
     hts : str
         hts file name including the .hts extension. Even if the file to be accessed is a dsn file, it must still have an hts extension for the web service.
     site : str or None
         The site to be extracted.
     measurement : str or None
         The measurement type name.
-    output_bad_sites : bool
-        Should sites with problems be returned?
-    tstype : str
-        Which type of dataseries are to be output, Standard or All?
+    output : dataframe or list of dict
+        The output object. Must be either dataframe or list of dict.
 
     Returns
     -------
     DataFrame
-        indexed by Site and Measurement.
-        If output_bad_sites is True than two DataFrames are returned.
     """
-    # Add the TSType field to the output dataframe if all measurements are requested.
-    if tstype != "All":
-        ds_types = ['DataType', 'From', 'To', 'SensorGroup']
-    else:
-        ds_types = ['DataType', 'From', 'To', 'SensorGroup', 'TSType']
-
-    m_types = ['RequestAs', 'Units']
-
     ### Make url
     url = build_url(base_url, hts, 'MeasurementList', site, measurement)
 
     ### Request data and load in xml
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
+    tree1 = get_hilltop_xml(url)
+
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
     data_sources = tree1.findall('DataSource')
-    if not data_sources:
-        return pd.DataFrame()
 
-    ### Test to see if the site only has a WQ Sample and no other measurment
-    if len(data_sources) == 1:
-        d = data_sources[0]
-        if d.attrib['Name'] == 'WQ Sample':
-            print('Site only has WQ Sample')
-            if output_bad_sites:
-                return pd.DataFrame(), pd.DataFrame()
-            else:
-                return pd.DataFrame()
-
-    ### Extract data into DataFrame
+    ### Extract data into list of dict - to represent the Hilltop structure
     data_list = []
 
-    for d in data_sources:
-        # if d.find('TSType') is None:
-        #     pass
-        # elif d.find('TSType').text != 'StdSeries' and tstype != "All":
-        #     continue
-        ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in d if c.tag in ds_types}
-        m_all = d.findall('Measurement')
-        for m in m_all:
-            m_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in m if c.tag in m_types}
-            m_dict.update(ds_dict)
-            data_list.append(m_dict)
+    if data_sources:
+        for d in data_sources:
+            ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in d if c.text is not None}
+            if 'DataType' in ds_dict:
+                if not ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
+                    ds_dict['SiteName'] = site
+                    data_source_name = d.attrib['Name']
+                    ds_dict['DataSourceName'] = data_source_name
+                    ds_dict['Measurements'] = []
+                    try:
+                        ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
 
-    mtype_df = pd.DataFrame(data_list)
-    if not mtype_df.empty:
-        mtype_df.rename(columns={'RequestAs': 'Measurement'}, inplace=True)
-        if 'To' in mtype_df.columns:
-            mtype_df.To = pd.to_datetime(mtype_df.To, infer_datetime_format=True, errors='coerce')
-        if 'From' in mtype_df.columns:
-            mtype_df.From = pd.to_datetime(mtype_df.From, infer_datetime_format=True, errors='coerce')
-        if 'Units' in mtype_df.columns:
-            mtype_df = mtype_df.replace({'Units': {'%': np.nan}}).copy()
-        mtype_df['Site'] = site
+                        m_all = d.findall('Measurement')
+                        for m in m_all:
+                            m_dict = {c.tag: convert_value(c.text) for c in m}
 
-        if output_bad_sites:
-            bad_sites = mtype_df[mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today())]
+                            if 'Format' in m_dict:
+                                f_text_list = m_dict['Format'].split('.')
+                                if len(f_text_list) == 2:
+                                    precision = len(f_text_list[1])
+                                else:
+                                    precision = 0
+                            else:
+                                precision = 0
 
-            if bad_sites.empty:
-                return mtype_df.set_index(['Site', 'Measurement']), pd.DataFrame()
-            else:
-                print('There are ' + str(len(bad_sites)) + ' sites with bad times')
-    #            print(bad_sites)
-                mtype_df = mtype_df[~(mtype_df['From'].isnull() | mtype_df['To'].isnull() | (mtype_df['From'] < '1900-01-01') | (mtype_df['To'] > pd.Timestamp.today()))]
-                return mtype_df.set_index(['Site', 'Measurement']), bad_sites
+                            m_dict['Precision'] = precision
+
+                            measurement_name = '{mtype} [{ds}]'.format(mtype=m.attrib['Name'], ds=data_source_name)
+                            m_dict['MeasurementName'] = measurement_name
+
+                            m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
+                            ds_dict1['Measurements'].append(m_dict1)
+
+                        data_list.append(ds_dict1)
+                    except:
+                        pass
+
+    ## Convert output
+    if output == 'dataframe':
+        if data_list:
+            output_list = []
+            extend = output_list.extend
+            for d in data_list:
+                mtypes = d.pop('Measurements')
+                _ = [m.update(d) for m in mtypes]
+                extend(mtypes)
+
+            output1 = pd.DataFrame(output_list)
+
+            output1['From'] = pd.to_datetime(output1['From'])
+            output1['To'] = pd.to_datetime(output1['To'])
+
+            if 'VMStart' in output1:
+                output1['VMStart'] = pd.to_datetime(output1['VMStart'])
+            if 'VMFinish' in output:
+                output1['VMFinish'] = pd.to_datetime(output1['VMFinish'])
+
+            output1 = output1.set_index(['SiteName', 'MeasurementName']).reset_index()
         else:
-            return mtype_df.set_index(['Site', 'Measurement'])
-
+            output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName'])
     else:
-        if output_bad_sites:
-            return pd.DataFrame(), pd.DataFrame()
-        else:
-            return pd.DataFrame()
+        output1 = data_list
+
+    return output1
 
 
-def measurement_list_all(base_url, hts):
-    """
-    Function to query a Hilltop server for the measurement summary of all sites in an hts file.
-
-    Parameters
-    ----------
-    base_url : str
-        root url str. e.g. http://wateruse.ecan.govt.nz
-    hts : str
-        hts file name including the .hts extension. Even if the file to be accessed is a dsn file, it must still have an hts extension for the web service.
-
-    Returns
-    -------
-    DataFrame
-        indexed by Site and Measurement
-    """
-    sites = site_list(base_url, hts)
-
-    mtype_list = []
-    for s in sites.SiteName:
-#        print(s)
-        m1 = measurement_list(base_url, hts, s)
-        mtype_list.append(m1)
-    mtype_df = pd.concat(mtype_list)
-
-    return mtype_df
-
-
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', parameters=False, dtl_method=None, quality_codes=False, tstype=None, ignore_gaps=True):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=True, tstype='Standard'):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
     Parameters
     ----------
     base_url : str
-        root url str. e.g. http://wateruse.ecan.govt.nz
+        root Hilltop url str.
     hts : str
         hts file name including the .hts extension. Even if the file to be accessed is a dsn file, it must still have an hts extension for the web service.
     request : str
@@ -406,232 +361,131 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The aggregation method to resample the data. e.g. Average, Total, Moving Average, Extrema.
     agg_interval : str
         The aggregation interval for the agg_method. e.g. '1 day', '1 week', '1 month'.
-    parameters : bool
-        Should the additional parameters (other than the value) be extracted and returned if they exist?
-    dtl_method : str or None
-        The method to use to convert values below a detection limit to numeric. Used for water quality results. Options are 'half' or 'trend'. 'half' simply halves the detection limit value, while 'trend' uses half the highest detection limit across the results when more than 40% of the values are below the detection limit. Otherwise it uses half the detection limit.
+    alignment : str
+        The start time alignment when agg_method is not None.
     quality_codes : bool
         Should the quality codes get returned?
     tstype : str
         The timeseries type, one of Standard, Check or Quality
-    ignore_gaps : bool
-        Should gaps be ignored when pulling out the data? Different organisations handle gap tagging differently. Some put gap tags at the beginning and end of a gap, while others put only a single gap tag. If ignore_gaps is False, then hilltop-py assumes the former and removes data between gaps. When in doubt, use the default of True.
 
     Returns
     -------
     DataFrame
-        If parameters is False, then only one DataFrame is returned indexed by Site, Measurement, and DateTime. If parameters is True, then two DataFrames are returned. The first is the same as if parameters is False, but the second contains those additional parameters indexed by Site, Measurement, DateTime, and Parameter.
     """
     ### Make url
     url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype)
+
     ### Request data and load in xml
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
+    tree1 = get_hilltop_xml(url)
+
     if tree1.find('Error') is not None:
-        raise ValueError('No results returned from URL request')
+        raise ValueError(tree1.find('Error').text)
     meas1 = tree1.find('Measurement')
-    if meas1 is None:
-        print('No data, returning empty DataFrame')
-        return pd.DataFrame()
-    datatype = meas1.find('DataSource').find('DataType').text
-    data1 = meas1.find('Data')
-    es1 = list(data1)
 
-    ### Extract data
-    if measurement == 'WQ Sample':
-        tsdata_dict = {}
-        for d in es1:
-            time1 = d.find('T').text
-            params1 = d.findall('Parameter')
-            if not params1:
-                continue
-            p_dict = {i.attrib['Name'].encode('ascii', 'ignore').decode(): i.attrib['Value'][:299].encode('ascii', 'ignore').decode() for i in params1}
-            tsdata_dict.update({time1: p_dict})
-        data_df = pd.DataFrame.from_dict(tsdata_dict, orient='index').stack().reset_index()
-        data_df.columns = ['DateTime', 'Parameter', 'Value']
-    elif datatype == 'WQData':
-        if parameters:
-            tsdata_list = []
-            tsextra_dict = {}
-            for d in es1:
-                time1 = d.find('T').text
-                value1 = d.find('Value').text.encode('ascii', 'ignore').decode()
-                params1 = d.findall('Parameter')
-                if params1:
-                    p_dict = {i.attrib['Name'].encode('ascii', 'ignore').decode(): i.attrib['Value'][:299].encode('ascii', 'ignore').decode() for i in params1}
-                    tsextra_dict.update({time1: p_dict})
-                tsdata_list.append([time1, value1])
-            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
-            if tsextra_dict:
-                extra_df = pd.DataFrame.from_dict(tsextra_dict, orient='index').stack().reset_index()
-                extra_df.columns = ['DateTime', 'Parameter', 'Value']
-        else:
-            tsdata_list = []
-            gap = 0
-            for d in es1:
-                tag1 = d.tag
-                if tag1 == 'Gap':
-                    gap = gap + 1
-                    continue
-                if not ignore_gaps:
-                    if gap % 2 == 1:
-                        continue
-                tsdata_list.append([d.find('T').text, d.find('Value').text.encode('ascii', 'ignore').decode()])
-            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
-    elif datatype in ['SimpleTimeSeries', 'MeterReading']:
-        tsdata_list = []
-        gap = 0
-        for d in es1:
-            tag1 = d.tag
-            if tag1 == 'Gap':
-                gap = gap + 1
-                continue
-            if not ignore_gaps:
-                if gap % 2 == 1:
-                    continue
+    if meas1 is not None:
+        ## Parse the data source and associated measurements
+        ds = meas1.find('DataSource')
+        ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in ds if c.text is not None}
+        ds_dict['SiteName'] = site
+        data_source_name = ds.attrib['Name']
 
-            if quality_codes:
-                tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode(), d.find('Q1').text.encode('ascii', 'ignore').decode()])
+        if data_source_name in ['HydSection', 'HydFacecard']:
+            raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Sources have not been implemented.')
+
+        ds_dict['DataSourceName'] = data_source_name
+        ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
+
+        ## Get the measurement info
+        measurements = ds.findall('ItemInfo')
+
+        for m in measurements:
+            m_dict = {c.tag: convert_value(c.text) for c in m}
+            m_name = m_dict.pop('ItemName')
+
+            measurement_name = '{mtype} [{ds}]'.format(mtype=m_name, ds=data_source_name)
+
+            if measurement in [measurement_name, m_name]:
+                if 'Format' in m_dict:
+                    f_text_list = m_dict['Format'].split('.')
+                    if len(f_text_list) == 2:
+                        precision = len(f_text_list[1])
+                    else:
+                        precision = 0
+                else:
+                    precision = 0
+
+                m_dict['Precision'] = precision
+                m_dict['MeasurementName'] = measurement_name
+
+                m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
+                m_dict1['ItemNum'] = int(m.attrib['ItemNumber'])
+
+            ds_dict1.update(m_dict1)
+
+        ## Parse the ts data
+        item_num = str(ds_dict1['ItemNum'])
+        data1 = meas1.find('Data').findall('E')
+
+        data_list = []
+        append = data_list.append
+
+        for val in data1:
+            time = val.find('T').text.encode('ascii', 'ignore').decode()
+
+            val_dict = {'Time': time}
+
+            censor_code = None
+            if ds_dict1['DataType'] == 'WQData':
+                v1 = convert_value(val.find('Value').text)
+                if isinstance(v1, str):
+                    if '<' in v1:
+                        censor_code = 'less_than'
+                        v1 = convert_value(v1[1:])
+                    elif '>' in v1:
+                        censor_code = 'greater_than'
+                        v1 = convert_value(v1[1:])
+
+                qual_code = val.find('QualityCode')
+            elif ds_dict1['DataType'] == 'WQSample':
+                v1 = None
+                qual_code = None
             else:
-                tsdata_list.append([d.find('T').text, d.find('I1').text.encode('ascii', 'ignore').decode()])
+                v1 = convert_value(val.find('I' + item_num).text)
+                qual_code = val.find('Q' + item_num)
 
-        if quality_codes:
-            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value', 'QualityCode'])
-        else:
-            data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
-        data_df.Value = pd.to_numeric(data_df.Value, errors='ignore')
+            if 'Divisor' in ds_dict1:
+                v1 = v1 / ds_dict1['Divisor']
 
-    elif datatype in ['GaugingResults']:
-        if not measurement in gauging_dict:
-            raise ValueError('The requested Gauging Measurement type is not correct')
-        g_type = gauging_dict[measurement]
-        tsdata_list = []
-        gap = 0
-        for d in es1:
-            tag1 = d.tag
-            if tag1 == 'Gap':
-                gap = gap + 1
-                continue
-            if not ignore_gaps:
-                if gap % 2 == 1:
-                    continue
-            tsdata_list.append([d.find('T').text, int(d.find(g_type['row']).text.encode('ascii', 'ignore').decode()) * g_type['multiplier']])
-        data_df = pd.DataFrame(tsdata_list, columns=['DateTime', 'Value'])
+            if apply_precision and isinstance(v1, (int, float)) and (censor_code is None):
+                v1 = np.round(v1, ds_dict1['Precision'])
+                if ds_dict1['Precision'] == 0:
+                    v1 = int(v1)
+
+            if v1 is not None:
+                val_dict['Value'] = v1
+            if censor_code is not None:
+                val_dict['CensorCode'] = censor_code
+
+            params = val.findall('Parameter')
+
+            if params:
+                for param in params:
+                    p_name = param.attrib['Name']
+                    p_val = convert_value(param.attrib['Value'])
+                    val_dict[p_name] = p_val
+
+            if qual_code is not None:
+                val_dict['QualityCode'] = convert_value(qual_code.text)
+
+            append(val_dict)
+
+        output1 = pd.DataFrame(data_list)
+        output1['Time'] = pd.to_datetime(output1['Time'])
+        output1['SiteName'] = site
+        output1['MeasurementName'] = measurement
+        output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
 
     else:
-        raise ValueError('Data Source has no querying option in hilltop-py')
+        output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
 
-    ### Convert DateTime
-    data_df['DateTime'] = pd.to_datetime(data_df['DateTime'], infer_datetime_format=True)
-
-    ### If detection limit values should be estimated
-    if isinstance(dtl_method, str):
-        if data_df['Value'].dtype == 'object':
-            greater1 = data_df['Value'].str.contains('>')
-            if greater1.sum() > 0:
-                greater1.loc[greater1.isnull()] = False
-                data_df = data_df.copy()
-                data_df.loc[greater1, 'Value'] = pd.to_numeric(data_df.loc[greater1, 'Value'].str.replace('>', ''), errors='coerce') * 2
-            data_df['Value'] = pd.to_numeric(data_df['Value'], errors='ignore')
-
-        if data_df['Value'].dtype == 'object':
-            less1 = data_df['Value'].str.contains('<')
-            if less1.sum() > 0:
-                less1.loc[less1.isnull()] = False
-                data_df = data_df.copy()
-                data_df.loc[less1, 'Value'] = pd.to_numeric(data_df.loc[less1, 'Value'].str.replace('<', ''), errors='coerce') * 0.5
-            data_df['Value'] = pd.to_numeric(data_df['Value'], errors='coerce')
-            if (dtl_method == 'trend') and (less1.sum() > 0):
-                df1 = data_df.loc[less1]
-                count1 = len(data_df)
-                count_dtl = len(df1)
-                count_dtl_val = df1['Value'].nunique()
-                dtl_ratio = np.round(count_dtl / float(count1), 2)
-
-                if dtl_ratio > 0.7:
-                    print('More than 70% of the values are less then the detection limit! Be careful...')
-
-                if (dtl_ratio >= 0.4) or (count_dtl_val != 1):
-                    dtl_val = df1['Value'].max()
-                    data_df.loc[(data_df['Value'] < dtl_val) | less1, 'Value'] = dtl_val
-
-    ### Add in additional site column
-    data_df['Site'] = site
-
-    ### Prepare dataframes to be returned
-    if measurement == 'WQ Sample':
-        data_df = data_df.set_index(['Site', 'Parameter', 'DateTime'])
-    else:
-        data_df['Measurement'] = measurement
-        data_df = data_df.set_index(['Site', 'Measurement', 'DateTime'])
-    if (parameters) & (datatype == 'WQData'):
-        if tsextra_dict:
-            extra_df['DateTime'] = pd.to_datetime(extra_df['DateTime'], infer_datetime_format=True)
-            extra_df['Measurement'] = measurement
-            extra_df['Site'] = site
-            extra_df = extra_df.set_index(['Site', 'Measurement', 'Parameter', 'DateTime'])
-
-            return data_df, extra_df
-        else:
-            extra_df = pd.DataFrame(columns=['Site', 'Measurement', 'Parameter', 'DateTime', 'Value'])
-            extra_df = extra_df.set_index(['Site', 'Measurement', 'Parameter', 'DateTime'])
-            return data_df, extra_df
-    else:
-        return data_df
-
-
-def wq_sample_parameter_list(base_url, hts, site):
-    """
-    Function to query a Hilltop server for the WQ sample parameter summary of a site.
-
-    Parameters
-    ----------
-    base_url : str
-        root url str. e.g. http://wateruse.ecan.govt.nz
-    hts : str
-        hts file name including the .hts extension. Even if the file to be accessed is a dsn file, it must still have an hts extension for the web service.
-    site : str or None
-        The site to be extracted.
-
-    Returns
-    -------
-    DataFrame
-        indexed by Site and Parameter
-    """
-    ### Make url
-    url = build_url(base_url, hts, 'GetData', site, 'WQ Sample')
-
-    ### Request data and load in xml
-    with urllib.request.urlopen(url) as req:
-        tree1 = ET.parse(req)
-    if tree1.find('Error') is not None:
-        raise ValueError('No results returned from URL request')
-    meas1 = tree1.find('Measurement')
-    if meas1 is None:
-        print('No data, returning empty DataFrame')
-        return pd.DataFrame()
-    data1 = meas1.find('Data')
-    # es1 = data1.getchildren()
-    es1 = list(data1)
-
-    ### Extract data
-    tsdata_dict = {}
-    p_set = set()
-    for d in es1:
-        params1 = d.findall('Parameter')
-        if not params1:
-            continue
-        p_tup = tuple(i.attrib['Name'].encode('ascii', 'ignore').decode() for i in params1)
-        tsdata_dict[d.find('T').text] = p_tup
-        p_set.update(set(p_tup))
-    p_t_dict = {p: tuple(i for i, k in tsdata_dict.items() if p in k) for p in p_tup}
-    min_max_dict = {i: (min(k), max(k))  for i, k in p_t_dict.items()}
-    mtype_df = pd.DataFrame.from_dict(min_max_dict, orient='index').reset_index()
-    if not mtype_df.empty:
-        mtype_df.columns = ['Parameter', 'From', 'To']
-        mtype_df.To = pd.to_datetime(mtype_df.To, infer_datetime_format=True)
-        mtype_df.From = pd.to_datetime(mtype_df.From, infer_datetime_format=True)
-        mtype_df['DataType'] = 'WQSample'
-        mtype_df['Site'] = site
-
-    return mtype_df.set_index(['Site', 'Parameter'])
+    return output1
