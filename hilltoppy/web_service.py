@@ -365,6 +365,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The start time alignment when agg_method is not None.
     quality_codes : bool
         Should the quality codes get returned?
+    apply_precision : bool
+        Should the precision according to Hilltop be applied to the data?
     tstype : str
         The timeseries type, one of Standard, Check or Quality
 
