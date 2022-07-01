@@ -225,7 +225,7 @@ def collection_list(base_url, hts):
             colname = colitem.attrib['Name']
             data_list = []
             for site in colitem:
-                row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site])
+                row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site if col.text is not None])
                 data_list.append(row)
             col_df = pd.DataFrame(data_list)
             col_df['CollectionName'] = colname
