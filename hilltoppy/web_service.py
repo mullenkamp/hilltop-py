@@ -225,7 +225,7 @@ def collection_list(base_url, hts):
             colname = colitem.attrib['Name']
             data_list = []
             for site in colitem:
-                row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site])
+                row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site if col.text is not None])
                 data_list.append(row)
             col_df = pd.DataFrame(data_list)
             col_df['CollectionName'] = colname
@@ -365,6 +365,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The start time alignment when agg_method is not None.
     quality_codes : bool
         Should the quality codes get returned?
+    apply_precision : bool
+        Should the precision according to Hilltop be applied to the data?
     tstype : str
         The timeseries type, one of Standard, Check or Quality
 

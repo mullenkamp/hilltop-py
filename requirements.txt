@@ -1,3 +1,4 @@
 pandas
 pydantic
 orjson
+requests

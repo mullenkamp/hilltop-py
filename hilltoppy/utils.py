@@ -14,8 +14,9 @@ import orjson
 from typing import List
 from pydantic import BaseModel, Field, HttpUrl, conint, confloat
 from enum import Enum
-import urllib
-import urllib.request
+# import urllib
+# import urllib.request
+import requests
 import xml.etree.ElementTree as ET
 from time import sleep
 
@@ -58,6 +59,7 @@ class Interpolation(str, Enum):
     instant = 'Instant'
     incremental = 'Incremental'
     event = 'Event'
+    quasi_continuous = 'Quasi-continuous'
 
 
 class Measurement(BaseModel):
@@ -109,18 +111,18 @@ def get_hilltop_xml(url, timeout=60):
     counter = [10, 20, 30, None]
     for c in counter:
         try:
-            with urllib.request.urlopen(url, timeout=timeout) as req:
-                tree1 = ET.parse(req)
+            with requests.get(url, timeout=timeout) as req:
+                tree1 = ET.fromstring(req.content)
             break
         except ET.ParseError:
             raise ET.ParseError('Could not parse xml. Check to make sure the URL is correct.')
-        except urllib.error.URLError:
-            raise urllib.error.URLError('Could not read the URL. Check to make sure the URL is correct.')
+        except requests.exceptions.ConnectionError:
+            raise requests.exceptions.ConnectionError('Could not read the URL. Check to make sure the URL is correct.')
         except Exception as err:
             print(str(err))
 
             if c is None:
-                raise urllib.error.URLError('The Hilltop request tried too many times...the server is probably down')
+                raise requests.exceptions.ConnectionError('The Hilltop request tried too many times...the server is probably down')
 
             print('Trying again in ' + str(c) + ' seconds.')
             sleep(c)
@@ -356,4 +358,3 @@ def proc_ht_use_data(ht_data):
     df3 = df2.groupby(['Site', 'DateTime']).Value.last()
 
     return df3
-
