@@ -422,7 +422,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
                 m_dict1['ItemNum'] = int(m.attrib['ItemNumber'])
 
-            ds_dict1.update(m_dict1)
+                ds_dict1.update(m_dict1)
 
         ## Parse the ts data
         item_num = str(ds_dict1['ItemNum'])
