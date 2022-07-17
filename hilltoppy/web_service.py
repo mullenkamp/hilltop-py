@@ -406,7 +406,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
             measurement_name = '{mtype} [{ds}]'.format(mtype=m_name, ds=data_source_name)
 
-            if measurement in [measurement_name, m_name]:
+            if measurement.lower() in [measurement_name.lower(), m_name.lower()]:
                 if 'Format' in m_dict:
                     f_text_list = m_dict['Format'].split('.')
                     if len(f_text_list) == 2:
@@ -486,6 +486,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         output1['SiteName'] = site
         output1['MeasurementName'] = measurement
         output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
+
+        if 'CensorCode' in output1:
+            output1.loc[output1['CensorCode'].isnull(), 'CensorCode'] = 'not_censored'
 
     else:
         output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
