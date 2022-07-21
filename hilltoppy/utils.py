@@ -19,6 +19,7 @@ from enum import Enum
 import requests
 import xml.etree.ElementTree as ET
 from time import sleep
+import http
 
 ##############################################
 ### Data models
@@ -114,10 +115,21 @@ def get_hilltop_xml(url, timeout=60):
             with requests.get(url, timeout=timeout) as req:
                 tree1 = ET.fromstring(req.content)
             break
-        except ET.ParseError:
-            raise ET.ParseError('Could not parse xml. Check to make sure the URL is correct.')
-        except requests.exceptions.ConnectionError:
-            raise requests.exceptions.ConnectionError('Could not read the URL. Check to make sure the URL is correct.')
+        # except ET.ParseError:
+        #     raise ET.ParseError('Could not parse xml. Check to make sure the URL is correct.')
+
+        # except http.client.RemoteDisconnected as err:
+        #     print(str(err))
+
+        #     if c is None:
+        #         raise requests.exceptions.ConnectionError('The Hilltop request tried too many times...the server is probably down')
+
+        #     print('Trying again in ' + str(c) + ' seconds.')
+        #     sleep(c)
+
+        # except requests.exceptions.ConnectionError:
+        #     raise requests.exceptions.ConnectionError('Could not read the URL. Check to make sure the URL is correct.')
+
         except Exception as err:
             print(str(err))
 

@@ -119,7 +119,7 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
     return base_url + hts + '?' + encoded_data
 
 
-def site_list(base_url, hts, location=None, measurement=None, collection=None, site_parameters=None):
+def site_list(base_url, hts, location=None, measurement=None, collection=None, site_parameters=None, timeout=60):
     """
     SiteList request function. Returns a list of sites associated with the hts file.
 
@@ -141,7 +141,7 @@ def site_list(base_url, hts, location=None, measurement=None, collection=None, s
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
-    tree1 = get_hilltop_xml(url)
+    tree1 = get_hilltop_xml(url, timeout=timeout)
 
     site_tree = tree1.findall('Site')
 
@@ -161,7 +161,7 @@ def site_list(base_url, hts, location=None, measurement=None, collection=None, s
     return sites_df
 
 
-def site_info(base_url, hts, site):
+def site_info(base_url, hts, site, timeout=60):
     """
     SiteInfo request function. Returns all of the site data for a specific site. The Hilltop sites table has tons of fields, so you never know what you're going to get.
 
@@ -179,7 +179,7 @@ def site_info(base_url, hts, site):
     DataFrame
     """
     url = build_url(base_url, hts, 'SiteInfo', site=site)
-    tree1 = get_hilltop_xml(url)
+    tree1 = get_hilltop_xml(url, timeout=timeout)
 
     site_tree = tree1.find('Site')
 
@@ -199,7 +199,7 @@ def site_info(base_url, hts, site):
     return site_df
 
 
-def collection_list(base_url, hts):
+def collection_list(base_url, hts, timeout=60):
     """
     CollectionList request function. Returns a frame of collection and site names associated with the hts file.
 
@@ -215,7 +215,7 @@ def collection_list(base_url, hts):
     DataFrame
     """
     url = build_url(base_url, hts, 'CollectionList')
-    tree1 = get_hilltop_xml(url)
+    tree1 = get_hilltop_xml(url, timeout=timeout)
 
     collection_tree = tree1.findall('Collection')
 
@@ -237,7 +237,7 @@ def collection_list(base_url, hts):
     return collection_df
 
 
-def measurement_list(base_url, hts, site, measurement=None, output='dataframe'):
+def measurement_list(base_url, hts, site, measurement=None, output='dataframe', timeout=60):
     """
     Function to query a Hilltop server for the measurement summary of a site.
 
@@ -262,7 +262,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe'):
     url = build_url(base_url, hts, 'MeasurementList', site, measurement)
 
     ### Request data and load in xml
-    tree1 = get_hilltop_xml(url)
+    tree1 = get_hilltop_xml(url, timeout=timeout)
 
     if tree1.find('Error') is not None:
         raise ValueError('No results returned from URL request')
@@ -337,7 +337,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe'):
     return output1
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=True, tstype='Standard'):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=True, tstype='Standard', timeout=60):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -378,7 +378,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
     url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype)
 
     ### Request data and load in xml
-    tree1 = get_hilltop_xml(url)
+    tree1 = get_hilltop_xml(url, timeout=timeout)
 
     if tree1.find('Error') is not None:
         raise ValueError(tree1.find('Error').text)
@@ -406,7 +406,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
             measurement_name = '{mtype} [{ds}]'.format(mtype=m_name, ds=data_source_name)
 
-            if measurement in [measurement_name, m_name]:
+            if measurement.lower() in [measurement_name.lower(), m_name.lower()]:
                 if 'Format' in m_dict:
                     f_text_list = m_dict['Format'].split('.')
                     if len(f_text_list) == 2:
@@ -486,6 +486,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         output1['SiteName'] = site
         output1['MeasurementName'] = measurement
         output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
+
+        if 'CensorCode' in output1:
+            output1.loc[output1['CensorCode'].isnull(), 'CensorCode'] = 'not_censored'
 
     else:
         output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
