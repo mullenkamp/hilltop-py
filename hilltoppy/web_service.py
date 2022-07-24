@@ -337,7 +337,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
     return output1
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=True, tstype='Standard', timeout=60):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=False, tstype='Standard', timeout=60):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -469,8 +469,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 v1 = convert_value(val.find('I' + item_num).text)
                 qual_code = val.find('Q' + item_num)
 
-            if 'Divisor' in ds_dict1:
-                v1 = v1 / ds_dict1['Divisor']
+            # if 'Divisor' in ds_dict1:
+            #     v1 = v1 / ds_dict1['Divisor']
 
             if apply_precision and isinstance(v1, (int, float)) and (censor_code is None):
                 v1 = np.round(v1, ds_dict1['Precision'])

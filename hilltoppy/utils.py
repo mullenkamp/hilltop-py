@@ -151,6 +151,8 @@ def convert_value(text):
         val = text.encode('ascii', 'ignore').decode()
         if val in ['False', 'True']:
             val = bool(val)
+        elif val == '-0':
+            val = None
         else:
             try:
                 val = int(val)
