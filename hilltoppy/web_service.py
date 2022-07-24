@@ -418,14 +418,28 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
                 m_dict['Precision'] = precision
                 m_dict['MeasurementName'] = measurement_name
+                m_dict['Item'] = int(m.attrib['ItemNumber'])
 
                 m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
-                m_dict1['ItemNum'] = int(m.attrib['ItemNumber'])
 
                 ds_dict1.update(m_dict1)
 
+        ## Check if the measurement actually came through with the GetData request
+        ## Hilltop seems oddly inconsistant when it returns the measurements...
+        ## If not, then get the measurement data from the measurement_list function
+        if 'Item' not in ds_dict1:
+            ml = measurement_list(base_url, hts, site, measurement=measurement, output='dict', timeout=timeout)
+            for ds in ml:
+                if ds['DataSourceName'] == data_source_name:
+                    for m in ds['Measurements']:
+                        measurement_name = m['MeasurementName']
+                        m_name = measurement_name[:-(len(data_source_name)+3)]
+
+                        if measurement.lower() in [measurement_name.lower(), m_name.lower()]:
+                            ds_dict1.update(m)
+
         ## Parse the ts data
-        item_num = str(ds_dict1['ItemNum'])
+        item_num = str(ds_dict1['Item'])
         data1 = meas1.find('Data').findall('E')
 
         data_list = []

@@ -76,6 +76,7 @@ class Measurement(BaseModel):
     MeasurementGroup: str = Field(None, description="I've only seen Virtual Measurements so far...")
     VMStart: datetime = Field(None, description="The start time of the virtual measurement.")
     VMFinish: datetime = Field(None, description="The end time of the virtual measurement.")
+    Item: int = Field(None, description="The measurement item number to know which result goes with which measurement.")
 
     class Config:
         json_loads = orjson.loads
