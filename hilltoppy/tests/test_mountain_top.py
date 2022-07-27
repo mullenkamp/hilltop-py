@@ -91,11 +91,11 @@ def test_collection_list(data):
     assert len(cl) > 180
 
 
-# @pytest.mark.parametrize('data', [test_data1])
-# def test_measurement_names(data):
-#     m_names1 = self.get_measurement_names()
-#     m_names2 = self.get_measurement_names(True)
-#     assert len(m_names1) > 100
+@pytest.mark.parametrize('data', [test_data1])
+def test_measurement_names(data):
+    m_names1 = self.get_measurement_names()
+    # m_names2 = self.get_measurement_names(True)
+    assert len(m_names1) > 100
 
 
 @pytest.mark.parametrize('data', [test_data1])
