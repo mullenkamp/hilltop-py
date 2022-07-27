@@ -31,14 +31,14 @@ from hilltoppy.web_service import measurement_list, site_list, collection_list, 
 #     to_date = '2018-11-01'
 #     )
 
-# test_data2 = dict(
-#     base_url = 'https://data.hbrc.govt.nz/Envirodata',
-#     hts = 'data.hts',
-#     site = 'Akatarawa River at Cemetery',
-#     measurement = 'Flow',
-#     from_date = '2018-10-13',
-#     to_date = '2018-11-01'
-#     )
+test_data2 = dict(
+    base_url = 'https://data.hbrc.govt.nz/Envirodata',
+    hts = 'data.hts',
+    site = '070649M1',
+    measurement = 'Flow',
+    from_date = '2012-10-13',
+    to_date = '2012-11-01'
+    )
 
 test_data1 = dict(
     base_url = 'http://hilltop.gw.govt.nz/',
@@ -52,19 +52,19 @@ test_data1 = dict(
 
 ### Tests
 
-@pytest.mark.parametrize('data', [test_data1])
+@pytest.mark.parametrize('data', [test_data1, test_data2])
 def test_site_list(data):
     sites = site_list(data['base_url'], data['hts'], True)
     assert len(sites) > 1000
 
 
-@pytest.mark.parametrize('data', [test_data1])
+@pytest.mark.parametrize('data', [test_data1, test_data2])
 def test_site_info(data):
     site_data = site_info(data['base_url'], data['hts'], data['site'])
-    assert len(site_data.columns) > 10
+    assert len(site_data.columns) > 4
 
 
-@pytest.mark.parametrize('data', [test_data1])
+@pytest.mark.parametrize('data', [test_data1, test_data2])
 def test_measurement_list(data):
     mtype_df1 = measurement_list(data['base_url'], data['hts'], data['site'])
     assert len(mtype_df1) > 6
@@ -76,13 +76,13 @@ def test_site_list_with_collection(data):
     assert len(sites) > 40
 
 
-@pytest.mark.parametrize('data', [test_data1])
+@pytest.mark.parametrize('data', [test_data1, test_data2])
 def test_collection_list(data):
     cl = collection_list(data['base_url'], data['hts'])
     assert len(cl) > 180
 
 
-@pytest.mark.parametrize('data', [test_data1])
+@pytest.mark.parametrize('data', [test_data1, test_data2])
 def test_get_data1(data):
     tsdata1 = get_data(data['base_url'], data['hts'], data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'])
     assert len(tsdata1) > 70

@@ -9,6 +9,7 @@ import numpy as np
 import urllib.parse
 from hilltoppy.utils import convert_value, DataSource, Measurement, get_hilltop_xml
 import orjson
+from typing import List, Optional, Union
 
 ############################################
 ### Parameters
@@ -19,7 +20,7 @@ available_requests = ['SiteList', 'MeasurementList', 'CollectionList', 'GetData'
 ### Functions
 
 
-def build_url(base_url, hts, request, site=None, measurement=None, collection=None, from_date=None, to_date=None, location=None, site_parameters=None, agg_method=None, agg_interval=None, alignment=None, quality_codes=False, tstype=None):
+def build_url(base_url: str, hts: str, request: str, site: str = None, measurement: str = None, collection: str = None, from_date: str = None, to_date: str = None, location: Union[str, bool] = None, site_parameters: List[str] = None, agg_method: str = None, agg_interval: str = None, alignment: str = None, quality_codes: bool = False, tstype: str = None, response_format: str = None, units: bool = None):
     """
     Function to generate the Hilltop url for the web service.
 
@@ -42,8 +43,8 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
     to_date : str or None
         The end date in the format 2001-01-01. None will put it to the end of the time series.
     location : str or bool
-        Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
-    site_parameters : list
+        Should the location be returned? Only applies to the SiteList request. True returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
+    site_parameters : list of str
         A list of the site parameters to be returned with the SiteList request.
     agg_method : str
         The aggregation method to resample the data. e.g. Average, Total, Moving Average, Extrema.
@@ -55,15 +56,15 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
         Should the quality codes get returned from the GetData function.
     tstype : str
         The timeseries type, one of Standard, Check or Quality
+    xml_format: str
+        xml response structure. Options are None, Native, or WML2. Read the Hilltop server docs for more info.
 
     Returns
     -------
     str
         URL string for the Hilltop web server.
     """
-
     ### Check base parameters
-
     if not base_url.endswith('/'):
         base_url += '/'
     if not hts.endswith('.hts'):
@@ -75,47 +76,58 @@ def build_url(base_url, hts, request, site=None, measurement=None, collection=No
     data = {'Service': 'Hilltop', 'Request': request}
 
     ### Ready the others
-    if site is not None:
+    if isinstance(site, str):
         data['Site'] = site
-    if measurement is not None:
+    if isinstance(measurement, str):
         data['Measurement'] = measurement
-    if collection is not None:
+    if isinstance(collection, str):
         data['Collection'] = collection
+    if units is True:
+        data['Units'] = 'Yes'
+
     if request == 'SiteList':
         if isinstance(site_parameters, list):
             data['SiteParameters'] = ','.join(site_parameters)
         if location is True:
             data['Location'] = 'Yes'
         elif isinstance(location, str):
-            data['Location'] = location
-    if request == 'GetData':
-        # data['Format'] = 'Native'
+            if location == 'LatLong':
+                data['Location'] = location
+            else:
+                raise ValueError('location must be either a bool or a str named LatLong.')
 
+    if request == 'GetData':
         if quality_codes:
             data['ShowQuality'] = 'Yes'
-        if tstype == 'Standard':
-            data['tsType'] = 'StdSeries'
-        elif tstype == 'Quality':
-            data['tsType'] = 'StdQualSeries'
-        elif tstype == 'Check':
-            data['tsType'] = 'CheckSeries'
+
+        if isinstance(tstype, str):
+            if tstype == 'Standard':
+                data['tsType'] = 'StdSeries'
+            elif tstype == 'Quality':
+                data['tsType'] = 'StdQualSeries'
+            elif tstype == 'Check':
+                data['tsType'] = 'CheckSeries'
+
+        if isinstance(response_format, str):
+            data['Format'] = response_format
 
         ### Time interval goes last!
-        if agg_method is not None:
+        if isinstance(agg_method, str):
             data['Method'] = agg_method
-        if agg_interval is not None:
+        if isinstance(agg_interval, str):
             data['Interval'] = agg_interval
+
         if from_date is None:
             from_date = '1800-01-01'
         if to_date is None:
             to_date = 'now'
         data['TimeInterval'] = str(from_date) + '/' + str(to_date)
-        if alignment is not None:
+
+        if isinstance(alignment, str):
             data['Alignment'] = alignment
 
     encoded_data = urllib.parse.urlencode(data, quote_via=urllib.parse.quote)
 
-    ### return
     return base_url + hts + '?' + encoded_data
 
 
@@ -226,6 +238,8 @@ def collection_list(base_url, hts, timeout=60):
             data_list = []
             for site in colitem:
                 row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site if col.text is not None])
+                if 'Measurement' in row:
+                    row['Measurement'] = row['Measurement'].lower()
                 data_list.append(row)
             col_df = pd.DataFrame(data_list)
             col_df['CollectionName'] = colname
@@ -277,9 +291,8 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
             if 'DataType' in ds_dict:
                 if not ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
                     ds_dict['SiteName'] = site
-                    data_source_name = d.attrib['Name']
+                    data_source_name = d.attrib['Name'].lower()
                     ds_dict['DataSourceName'] = data_source_name
-                    ds_dict['Measurements'] = []
                     try:
                         ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
 
@@ -298,41 +311,30 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
 
                             m_dict['Precision'] = precision
 
-                            measurement_name = '{mtype} [{ds}]'.format(mtype=m.attrib['Name'], ds=data_source_name)
-                            m_dict['MeasurementName'] = measurement_name
+                            m_dict['MeasurementName'] = m_dict.pop('RequestAs').lower()
 
                             m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
-                            ds_dict1['Measurements'].append(m_dict1)
+                            m_dict1.update(ds_dict1)
 
-                        data_list.append(ds_dict1)
+                            data_list.append(m_dict1)
                     except:
                         pass
 
     ## Convert output
-    if output == 'dataframe':
-        if data_list:
-            output_list = []
-            extend = output_list.extend
-            for d in data_list:
-                mtypes = d.pop('Measurements')
-                _ = [m.update(d) for m in mtypes]
-                extend(mtypes)
+    if data_list:
+        output1 = pd.DataFrame(data_list)
 
-            output1 = pd.DataFrame(output_list)
+        output1['From'] = pd.to_datetime(output1['From'])
+        output1['To'] = pd.to_datetime(output1['To'])
 
-            output1['From'] = pd.to_datetime(output1['From'])
-            output1['To'] = pd.to_datetime(output1['To'])
+        if 'VMStart' in output1:
+            output1['VMStart'] = pd.to_datetime(output1['VMStart'])
+        if 'VMFinish' in output1:
+            output1['VMFinish'] = pd.to_datetime(output1['VMFinish'])
 
-            if 'VMStart' in output1:
-                output1['VMStart'] = pd.to_datetime(output1['VMStart'])
-            if 'VMFinish' in output:
-                output1['VMFinish'] = pd.to_datetime(output1['VMFinish'])
-
-            output1 = output1.set_index(['SiteName', 'MeasurementName']).reset_index()
-        else:
-            output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName'])
+        output1 = output1.set_index(['SiteName', 'MeasurementName']).reset_index()
     else:
-        output1 = data_list
+        output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName'])
 
     return output1
 
@@ -384,15 +386,17 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         raise ValueError(tree1.find('Error').text)
     meas1 = tree1.find('Measurement')
 
+    measurement = measurement.lower()
+
     if meas1 is not None:
         ## Parse the data source and associated measurements
         ds = meas1.find('DataSource')
         ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in ds if c.text is not None}
         ds_dict['SiteName'] = site
-        data_source_name = ds.attrib['Name']
+        data_source_name = ds.attrib['Name'].lower()
 
-        if data_source_name in ['HydSection', 'HydFacecard']:
-            raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Sources have not been implemented.')
+        if ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
+            raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Types have not been implemented.')
 
         ds_dict['DataSourceName'] = data_source_name
         ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
@@ -402,11 +406,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
         for m in measurements:
             m_dict = {c.tag: convert_value(c.text) for c in m}
-            m_name = m_dict.pop('ItemName')
+            m_name = m_dict.pop('ItemName').lower()
 
-            measurement_name = '{mtype} [{ds}]'.format(mtype=m_name, ds=data_source_name)
-
-            if measurement.lower() in [measurement_name.lower(), m_name.lower()]:
+            if measurement == m_name:
                 if 'Format' in m_dict:
                     f_text_list = m_dict['Format'].split('.')
                     if len(f_text_list) == 2:
@@ -417,7 +419,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                     precision = 0
 
                 m_dict['Precision'] = precision
-                m_dict['MeasurementName'] = measurement_name
+                m_dict['MeasurementName'] = m_name
                 m_dict['Item'] = int(m.attrib['ItemNumber'])
 
                 m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
@@ -429,14 +431,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         ## If not, then get the measurement data from the measurement_list function
         if 'Item' not in ds_dict1:
             ml = measurement_list(base_url, hts, site, measurement=measurement, output='dict', timeout=timeout)
-            for ds in ml:
-                if ds['DataSourceName'] == data_source_name:
-                    for m in ds['Measurements']:
-                        measurement_name = m['MeasurementName']
-                        m_name = measurement_name[:-(len(data_source_name)+3)]
-
-                        if measurement.lower() in [measurement_name.lower(), m_name.lower()]:
-                            ds_dict1.update(m)
+            for m in ml:
+                if m['MeasurementName'] == measurement:
+                    ds_dict1.update(m)
 
         ## Parse the ts data
         item_num = str(ds_dict1['Item'])
@@ -468,9 +465,6 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             else:
                 v1 = convert_value(val.find('I' + item_num).text)
                 qual_code = val.find('Q' + item_num)
-
-            # if 'Divisor' in ds_dict1:
-            #     v1 = v1 / ds_dict1['Divisor']
 
             if apply_precision and isinstance(v1, (int, float)) and (censor_code is None):
                 v1 = np.round(v1, ds_dict1['Precision'])

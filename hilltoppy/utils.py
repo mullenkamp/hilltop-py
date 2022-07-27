@@ -11,7 +11,7 @@ try:
 except ImportError:
     from ConfigParser import SafeConfigParser as ConfigParser
 import orjson
-from typing import List
+from typing import List, Union
 from pydantic import BaseModel, Field, HttpUrl, conint, confloat
 from enum import Enum
 # import urllib
@@ -63,11 +63,23 @@ class Interpolation(str, Enum):
     quasi_continuous = 'Quasi-continuous'
 
 
+class Site(BaseModel):
+    """
+
+    """
+    SiteName: str = Field(..., description='The unique name of the site used by Hilltop.')
+    Easting: Union[int, float] = Field(None, description='The easting probably in NZTM.')
+    Northing: Union[int, float] = Field(None, description='The northing probably in NZTM.')
+    Latitude: Union[int, float] = Field(None, description='The Latitude in WGS84 decimal degrees.')
+    Longitude: Union[int, float] = Field(None, description='The Longitude in WGS84 decimal degrees.')
+    properties: dict = Field(None, description='A variety of other site properties/data.')
+
+
 class Measurement(BaseModel):
     """
 
     """
-    MeasurementName: str = Field(..., description='The measurement name associated with the DataSource. The DataSourceName has been appended to the MeasurementName (in the form of MeasurementName [DataSourceName]), because this is the requirement for requests to the Hilltop web server.')
+    MeasurementName: str = Field(..., description='The measurement name associated with the DataSource. The MeasurementName is derived from the RequestAs field provided by the Hilltop server. As such, this may include the DataSourceName appended onto the Measurement name with surrounding brackets.')
     # Item: int = Field(..., description='The Measurement item position in the Data when NumItems in the DataSource > 1.')
     Units: str = Field(None, description="The units of the data.")
     Precision: int = Field(..., description='The precision of the data as the number of decimal places.')
@@ -77,6 +89,7 @@ class Measurement(BaseModel):
     VMStart: datetime = Field(None, description="The start time of the virtual measurement.")
     VMFinish: datetime = Field(None, description="The end time of the virtual measurement.")
     Item: int = Field(None, description="The measurement item number to know which result goes with which measurement.")
+    # RequestAs: str = Field(None, description="The minimum measurement name the Hilltop server uses for responses and requests.")
 
     class Config:
         json_loads = orjson.loads
@@ -95,11 +108,17 @@ class DataSource(BaseModel):
     Interpolation: Interpolation
     From: datetime = None
     To: datetime = None
-    Measurements: List[Measurement] = None
 
     class Config:
         json_loads = orjson.loads
         json_dumps = orjson_dumps
+
+
+# class Result(BaseModel):
+#     """
+
+#     """
+
 
 
 ##############################################
@@ -143,12 +162,22 @@ def get_hilltop_xml(url, timeout=60):
     return tree1
 
 
+def convert_mowsecs(mowsecs: int):
+    """
+
+    """
+    time = pd.Timestamp(mowsecs - 946771200, unit='s')
+
+    return time
+
+
 def convert_value(text):
     """
 
     """
     if text is not None:
         val = text.encode('ascii', 'ignore').decode()
+
         if val in ['False', 'True']:
             val = bool(val)
         elif val == '-0':
@@ -168,6 +197,18 @@ def convert_value(text):
         val = None
 
     return val
+
+
+def parse_data_source(measurement):
+    """
+
+    """
+    if ' [' not in measurement:
+        raise ValueError('The measurement name must contain the data source name in brackets.')
+    m_name, ds_name = measurement.split(' [')
+    ds_name = ds_name[:-1]
+
+    return m_name, ds_name
 
 
 def parse_dsn(dsn_path):
