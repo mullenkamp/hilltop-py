@@ -270,7 +270,8 @@ class Hilltop(object):
         tree1 = get_hilltop_xml(url, timeout=self.timeout)
 
         if tree1.find('Error') is not None:
-            raise ValueError('No results returned from URL request')
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName'])
+
         data_sources = tree1.findall('DataSource')
 
         ### Extract data into list of dict - to represent the Hilltop structure
@@ -417,7 +418,7 @@ class Hilltop(object):
             _ = self._get_measurement_list_single(site, measurement)
 
         if measurement not in self._measurements[site]:
-            raise ValueError(measurement + ' Measurement Name is not in the requested site.')
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
 
         ## Determine what xml format to use
         m_dict1 = self._measurements[site][measurement]
@@ -437,7 +438,7 @@ class Hilltop(object):
         tree1 = get_hilltop_xml(url, timeout=self.timeout)
 
         if tree1.find('Error') is not None:
-            raise ValueError(tree1.find('Error').text)
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
         meas1 = tree1.find('Measurement')
 
         if meas1 is not None:
@@ -518,14 +519,17 @@ class Hilltop(object):
 
                     append(val_dict)
 
-            output1 = pd.DataFrame(data_list)
-            output1['Time'] = pd.to_datetime(output1['Time'])
-            output1['SiteName'] = site
-            output1['MeasurementName'] = measurement
-            output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
+            if data_list:
+                output1 = pd.DataFrame(data_list)
+                output1['Time'] = pd.to_datetime(output1['Time'])
+                output1['SiteName'] = site
+                output1['MeasurementName'] = measurement
+                output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
 
-            if 'CensorCode' in output1:
-                output1.loc[output1['CensorCode'].isnull(), 'CensorCode'] = 'not_censored'
+                if 'CensorCode' in output1:
+                    output1.loc[output1['CensorCode'].isnull(), 'CensorCode'] = 'not_censored'
+            else:
+                output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
 
         else:
             output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
