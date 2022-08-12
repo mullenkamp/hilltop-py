@@ -56,8 +56,8 @@ def build_url(base_url: str, hts: str, request: str, site: str = None, measureme
         Should the quality codes get returned from the GetData function.
     tstype : str
         The timeseries type, one of Standard, Check or Quality
-    xml_format: str
-        xml response structure. Options are None, Native, or WML2. Read the Hilltop server docs for more info.
+    response_format: str
+        The Hilltop response structure. Options are None, Native, or WML2. Read the Hilltop server docs for more info.
 
     Returns
     -------
@@ -147,6 +147,8 @@ def site_list(base_url, hts, location=None, measurement=None, collection=None, s
         Get site list via a collection.
     site_parameters : list
         A list of the site parameters to be returned with the SiteList request. Make a call to site_info to find all of the possible options.
+    timeout : int
+        The http request timeout in seconds.
 
     Returns
     -------
@@ -185,6 +187,8 @@ def site_info(base_url, hts, site, timeout=60):
         hts file name including the .hts extension.
     site : str or None
         The site to be extracted.
+    timeout : int
+        The http request timeout in seconds.
 
     Returns
     -------
@@ -221,6 +225,8 @@ def collection_list(base_url, hts, timeout=60):
         root Hilltop url str.
     hts : str
         hts file name including the .hts extension.
+    timeout : int
+        The http request timeout in seconds.
 
     Returns
     -------
@@ -238,8 +244,8 @@ def collection_list(base_url, hts, timeout=60):
             data_list = []
             for site in colitem:
                 row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site if col.text is not None])
-                if 'Measurement' in row:
-                    row['Measurement'] = row['Measurement'].lower()
+                # if 'Measurement' in row:
+                #     row['Measurement'] = row['Measurement'].lower()
                 data_list.append(row)
             col_df = pd.DataFrame(data_list)
             col_df['CollectionName'] = colname
@@ -267,6 +273,8 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
         The measurement type name.
     output : dataframe or list of dict
         The output object. Must be either dataframe or list of dict.
+    timeout : int
+        The http request timeout in seconds.
 
     Returns
     -------
@@ -291,7 +299,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
             if 'DataType' in ds_dict:
                 if not ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
                     ds_dict['SiteName'] = site
-                    data_source_name = d.attrib['Name'].lower()
+                    data_source_name = d.attrib['Name']
                     ds_dict['DataSourceName'] = data_source_name
                     try:
                         ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
@@ -311,7 +319,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
 
                             m_dict['Precision'] = precision
 
-                            m_dict['MeasurementName'] = m_dict.pop('RequestAs').lower()
+                            m_dict['MeasurementName'] = m_dict.pop('RequestAs')
 
                             m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
                             m_dict1.update(ds_dict1)
@@ -339,7 +347,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
     return output1
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=False, tstype='Standard', timeout=60):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=False, tstype=None, timeout=60):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -368,9 +376,11 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
     quality_codes : bool
         Should the quality codes get returned?
     apply_precision : bool
-        Should the precision according to Hilltop be applied to the data?
-    tstype : str
-        The timeseries type, one of Standard, Check or Quality
+        Should the precision according to Hilltop be applied to the data? Only use True if you're confident that Hilltop stores the correct precision, because it is not always correct.
+    tstype : str or None
+        The time series type; one of Standard, Check, or Quality.
+    timeout : int
+        The http request timeout in seconds.
 
     Returns
     -------
@@ -386,14 +396,12 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         raise ValueError(tree1.find('Error').text)
     meas1 = tree1.find('Measurement')
 
-    measurement = measurement.lower()
-
     if meas1 is not None:
         ## Parse the data source and associated measurements
         ds = meas1.find('DataSource')
         ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in ds if c.text is not None}
         ds_dict['SiteName'] = site
-        data_source_name = ds.attrib['Name'].lower()
+        data_source_name = ds.attrib['Name']
 
         if ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
             raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Types have not been implemented.')
@@ -406,9 +414,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
         for m in measurements:
             m_dict = {c.tag: convert_value(c.text) for c in m}
-            m_name = m_dict.pop('ItemName').lower()
+            m_name = m_dict.pop('ItemName')
 
-            if measurement == m_name:
+            if measurement.lower() == m_name.lower():
                 if 'Format' in m_dict:
                     f_text_list = m_dict['Format'].split('.')
                     if len(f_text_list) == 2:
@@ -432,7 +440,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         if 'Item' not in ds_dict1:
             ml = measurement_list(base_url, hts, site, measurement=measurement, output='dict', timeout=timeout)
             for m in ml:
-                if m['MeasurementName'] == measurement:
+                if m['MeasurementName'].lower() == measurement.lower():
                     ds_dict1.update(m)
 
         ## Parse the ts data
