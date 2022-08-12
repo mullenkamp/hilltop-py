@@ -36,7 +36,7 @@ class Hilltop(object):
         hts : str
             hts file name including the .hts extension.
         timeout : int
-            The url request timeout length in seconds.
+            The http request timeout length in seconds.
 
         """
         ## Test out Hilltop url
@@ -123,9 +123,9 @@ class Hilltop(object):
             meas_list = []
             m_names = set()
             for m in meas1:
-                m_name = m.attrib['Name'].lower()
+                m_name = m.attrib['Name']
                 if detailed:
-                    if m_name not in m_names:
+                    if m_name.lower() not in m_names:
                         sites = self.get_site_list(measurement=m_name)['SiteName'].tolist()
 
                         if sites:
@@ -133,7 +133,7 @@ class Hilltop(object):
                             m_cols = mtypes.columns
                             new_cols = m_cols[m_cols.isin(cols)]
                             mtypes = mtypes[new_cols].drop_duplicates('MeasurementName').set_index('MeasurementName').reset_index()
-                            m_names.update(set(mtypes['MeasurementName'].tolist()))
+                            m_names.update(set(mtypes['MeasurementName'].str.lower().tolist()))
                             meas_list.append(mtypes)
                 else:
                     meas_list.append(pd.DataFrame([m_name], columns=cols))
@@ -231,8 +231,8 @@ class Hilltop(object):
                 data_list = []
                 for site in colitem:
                     row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site if col.text is not None])
-                    if 'Measurement' in row:
-                        row['Measurement'] = row['Measurement'].lower()
+                    # if 'Measurement' in row:
+                    #     row['Measurement'] = row['Measurement'].lower()
                     data_list.append(row)
                 col_df = pd.DataFrame(data_list)
                 col_df['CollectionName'] = colname
@@ -270,7 +270,8 @@ class Hilltop(object):
         tree1 = get_hilltop_xml(url, timeout=self.timeout)
 
         if tree1.find('Error') is not None:
-            raise ValueError('No results returned from URL request')
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName'])
+
         data_sources = tree1.findall('DataSource')
 
         ### Extract data into list of dict - to represent the Hilltop structure
@@ -285,8 +286,7 @@ class Hilltop(object):
                 if 'DataType' in ds_dict:
                     if not ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
                         ds_dict['SiteName'] = site
-                        data_source_name = d.attrib['Name'].lower()
-                        ds_dict['DataSourceName'] = data_source_name
+                        ds_dict['DataSourceName'] = d.attrib['Name']
                         try:
                             ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
 
@@ -305,12 +305,12 @@ class Hilltop(object):
 
                                 m_dict['Precision'] = precision
 
-                                m_dict['MeasurementName'] = m_dict.pop('RequestAs').lower()
+                                m_dict['MeasurementName'] = m_dict.pop('RequestAs')
 
                                 m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
                                 m_dict1.update(ds_dict1)
 
-                                self._measurements[site][m_dict['MeasurementName']] = m_dict1
+                                self._measurements[site][m_dict['MeasurementName'].lower()] = m_dict1
 
                                 data_list.append(m_dict1)
                         except:
@@ -331,7 +331,7 @@ class Hilltop(object):
             output1 = output1.set_index(['SiteName', 'MeasurementName']).reset_index()
 
             if isinstance(measurement, str):
-                output1 = output1[output1['MeasurementName'] == measurement.lower()].copy()
+                output1 = output1[output1['MeasurementName'].str.lower() == measurement.lower()].copy()
         else:
             output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName'])
 
@@ -396,8 +396,8 @@ class Hilltop(object):
             Should the quality codes get returned?
         apply_precision : bool
             Should the precision according to Hilltop be applied to the data? Only use True if you're confident that Hilltop stores the correct precision, because it is not always correct.
-        tstype : str
-            The timeseries type, one of Standard, Check or Quality
+        tstype : str or None
+            The time series type; one of Standard, Check, or Quality.
 
         Returns
         -------
@@ -407,20 +407,18 @@ class Hilltop(object):
         if site not in self.available_sites:
             raise ValueError('Requested site is not in hts file.')
 
-        measurement = measurement.lower()
-
         ## Make sure that the measurement data has already been stored
         if site not in self._measurements:
             _ = self._get_measurement_list_single(site, measurement)
 
-        if measurement not in self._measurements[site]:
+        if measurement.lower() not in self._measurements[site]:
             _ = self._get_measurement_list_single(site, measurement)
 
-        if measurement not in self._measurements[site]:
-            raise ValueError(measurement + ' Measurement Name is not in the requested site.')
+        if measurement.lower() not in self._measurements[site]:
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
 
-        ## Determine what xml format to use
-        m_dict1 = self._measurements[site][measurement]
+        ## Determine what response format to use
+        m_dict1 = self._measurements[site][measurement.lower()]
 
         if m_dict1['DataType'] in ['HydSection', 'HydFacecard']:
             raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Types have not been implemented.')
@@ -437,7 +435,7 @@ class Hilltop(object):
         tree1 = get_hilltop_xml(url, timeout=self.timeout)
 
         if tree1.find('Error') is not None:
-            raise ValueError(tree1.find('Error').text)
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
         meas1 = tree1.find('Measurement')
 
         if meas1 is not None:
@@ -518,14 +516,17 @@ class Hilltop(object):
 
                     append(val_dict)
 
-            output1 = pd.DataFrame(data_list)
-            output1['Time'] = pd.to_datetime(output1['Time'])
-            output1['SiteName'] = site
-            output1['MeasurementName'] = measurement
-            output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
+            if data_list:
+                output1 = pd.DataFrame(data_list)
+                output1['Time'] = pd.to_datetime(output1['Time'])
+                output1['SiteName'] = site
+                output1['MeasurementName'] = measurement
+                output1 = output1.set_index(['SiteName', 'MeasurementName', 'Time']).reset_index()
 
-            if 'CensorCode' in output1:
-                output1.loc[output1['CensorCode'].isnull(), 'CensorCode'] = 'not_censored'
+                if 'CensorCode' in output1:
+                    output1.loc[output1['CensorCode'].isnull(), 'CensorCode'] = 'not_censored'
+            else:
+                output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
 
         else:
             output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])
@@ -558,7 +559,7 @@ class Hilltop(object):
         apply_precision : bool
             Should the precision according to Hilltop be applied to the data? Only use True if you're confident that Hilltop stores the correct precision, because it is not always correct.
         tstype : str or None
-            The timeseries type, one of Standard, Check or Quality
+            The time series type; one of Standard, Check, or Quality.
 
         Returns
         -------

@@ -199,16 +199,16 @@ def convert_value(text):
     return val
 
 
-def parse_data_source(measurement):
-    """
+# def parse_data_source(measurement):
+#     """
 
-    """
-    if ' [' not in measurement:
-        raise ValueError('The measurement name must contain the data source name in brackets.')
-    m_name, ds_name = measurement.split(' [')
-    ds_name = ds_name[:-1]
+#     """
+#     if ' [' not in measurement:
+#         raise ValueError('The measurement name must contain the data source name in brackets.')
+#     m_name, ds_name = measurement.split(' [')
+#     ds_name = ds_name[:-1]
 
-    return m_name, ds_name
+#     return m_name, ds_name
 
 
 def parse_dsn(dsn_path):
