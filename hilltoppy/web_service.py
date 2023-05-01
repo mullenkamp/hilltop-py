@@ -67,8 +67,8 @@ def build_url(base_url: str, hts: str, request: str, site: str = None, measureme
     ### Check base parameters
     if not base_url.endswith('/'):
         base_url += '/'
-    if not hts.endswith('.hts'):
-        raise ValueError('The hts file must end with .hts')
+    # if not hts.endswith('.hts'):
+    #     raise ValueError('The hts file must end with .hts')
     if request not in available_requests:
         raise ValueError('request must be one of ' + str(available_requests))
 
