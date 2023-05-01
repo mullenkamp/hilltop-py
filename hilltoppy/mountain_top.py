@@ -423,7 +423,7 @@ class Hilltop(object):
         if m_dict1['DataType'] in ['HydSection', 'HydFacecard']:
             raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Types have not been implemented.')
 
-        if m_dict1['DataType'] in ['GaugingResults']:
+        if (m_dict1['DataType'] in ['GaugingResults']) or (m_dict1['DataSourceName'] in ['Gauging Results']):
             response_format = 'Native'
         else:
             response_format = None
@@ -441,7 +441,7 @@ class Hilltop(object):
         if meas1 is not None:
             item_num = m_dict1['Item']
 
-            if m_dict1['DataType'] in ['GaugingResults']:
+            if (m_dict1['DataType'] in ['GaugingResults']) or (m_dict1['DataSourceName'] in ['Gauging Results']):
                 data1 = meas1.find('Data').findall('V')
 
                 data_list = []
