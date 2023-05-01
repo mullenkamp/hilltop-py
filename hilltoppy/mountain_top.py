@@ -454,7 +454,12 @@ class Hilltop(object):
 
                     val_dict = {'Time': time}
 
-                    v1 = int(val_text.split(' ')[item_num])
+                    v1 = val_text.split(' ')[item_num]
+
+                    try:
+                        v1 = int(v1)
+                    except ValueError:
+                        v1 = float(v1)
 
                     if v1 >= 0:
                         if 'Divisor' in m_dict1:
