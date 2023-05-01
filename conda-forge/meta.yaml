@@ -1,5 +1,5 @@
 {% set name = "hilltop-py" %}
-{% set version = "2.2.1" %}
+{% set version = "2.2.2" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/hilltop-py-{{ version }}.tar.gz
-  sha256: 294852b8d6e390300abf266349c750027cae9b2ee9ed7432815112f703ba4694
+  sha256: 54f3ea805b2d140f2353d7d4a1f6bafdfbee401c9bebd1ff433547d4b4c94277
 
 build:
   noarch: python
