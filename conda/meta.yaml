@@ -1,5 +1,5 @@
 {% set name = "hilltop-py" %}
-{% set version = "2.2.3" %}
+{% set version = "2.2.4" %}
 # {% set sha256 = "72a156e328247c91cb7f5440ffa98069c0090892f8d9d07fd57e36c0611a0403" %}
 
 # sha256 is the prefered checksum -- you can get it for a file with:
@@ -37,7 +37,7 @@ requirements:
   run:
     - python >=3.8
     - pandas
-    - pydantic >2
+    - pydantic <2
     - orjson
     - requests
 
