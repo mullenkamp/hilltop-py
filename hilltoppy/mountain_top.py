@@ -25,7 +25,7 @@ class Hilltop(object):
     """
 
     """
-    def __init__(self, base_url: str, hts: str, timeout: int = 60):
+    def __init__(self, base_url: str, hts: str, timeout: int = 60, **kwargs):
         """
         Base Hilltop function.
 
@@ -37,10 +37,12 @@ class Hilltop(object):
             hts file name including the .hts extension.
         timeout : int
             The http request timeout length in seconds.
+        **kwargs
+            Optional keyword arguments passed to requests.
 
         """
         ## Test out Hilltop url
-        sites = ws.site_list(base_url, hts, timeout=timeout)
+        sites = ws.site_list(base_url, hts, timeout=timeout, **kwargs)
 
         if sites.empty:
             raise ValueError('No sites found for the base_url and hts combo.')
@@ -52,6 +54,7 @@ class Hilltop(object):
         self.hts = hts
         self.available_sites = sites
         self._measurements = {}
+        self._requests_kwargs = kwargs
 
 
     def get_site_list(self, location: Union[str, bool] = None, measurement: str = None, collection: str = None, site_parameters: List[str] = None):
@@ -74,7 +77,7 @@ class Hilltop(object):
         DataFrame
         """
         url = ws.build_url(self.base_url, self.hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
-        tree1 = get_hilltop_xml(url, timeout=self.timeout)
+        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         site_tree = tree1.findall('Site')
 
@@ -113,7 +116,7 @@ class Hilltop(object):
             cols = ['MeasurementName']
 
         url = ws.build_url(self.base_url, self.hts, 'MeasurementList')
-        tree1 = get_hilltop_xml(url, timeout=self.timeout)
+        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         if tree1.find('Error') is not None:
             raise ValueError(tree1.find('Error').text)
@@ -163,7 +166,7 @@ class Hilltop(object):
             raise ValueError('Requested site is not in hts file.')
 
         url = ws.build_url(self.base_url, self.hts, 'SiteInfo', site=site)
-        tree1 = get_hilltop_xml(url, timeout=self.timeout)
+        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         site_tree = tree1.find('Site')
 
@@ -220,7 +223,7 @@ class Hilltop(object):
         DataFrame
         """
         url = ws.build_url(self.base_url, self.hts, 'CollectionList')
-        tree1 = get_hilltop_xml(url, timeout=self.timeout)
+        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         collection_tree = tree1.findall('Collection')
 
@@ -267,7 +270,7 @@ class Hilltop(object):
         url = ws.build_url(self.base_url, self.hts, 'MeasurementList', site, measurement)
 
         ### Request data and load in xml
-        tree1 = get_hilltop_xml(url, timeout=self.timeout)
+        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         if tree1.find('Error') is not None:
             return pd.DataFrame(columns=['SiteName', 'MeasurementName'])
@@ -432,7 +435,7 @@ class Hilltop(object):
         url = ws.build_url(base_url=self.base_url, hts=self.hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype, response_format=response_format)
 
         ## Request data and load in xml
-        tree1 = get_hilltop_xml(url, timeout=self.timeout)
+        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         if tree1.find('Error') is not None:
             return pd.DataFrame(columns=['SiteName', 'MeasurementName', 'Time'])

@@ -125,14 +125,14 @@ class DataSource(BaseModel):
 ### Functions
 
 
-def get_hilltop_xml(url, timeout=60):
+def get_hilltop_xml(url, timeout=60, **kwargs):
     """
 
     """
     counter = [10, 20, 30, None]
     for c in counter:
         try:
-            with requests.get(url, timeout=timeout) as req:
+            with requests.get(url, timeout=timeout, **kwargs) as req:
                 tree1 = ET.fromstring(req.content)
             break
         # except ET.ParseError:
@@ -190,7 +190,7 @@ def convert_value(text):
                     val = float(val)
                 except:
                     try:
-                        val = pd.to_datetime(val, dayfirst=True)
+                        val = pd.to_datetime(val)
                     except:
                         pass
     else:
