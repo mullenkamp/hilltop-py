@@ -1,4 +1,4 @@
 pandas
-pydantic>2
+pydantic<2
 orjson
 requests
