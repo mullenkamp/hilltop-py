@@ -10,7 +10,7 @@ Some of this documentation comes from the "Scripting.doc" file in the Hilltop in
    :suppress:
 
    from hilltoppy import web_service as ws
-   from hilltoppy import Hilltop, build_url
+   from hilltoppy import Hilltop, utils
    import pandas as pd
 
    pd.options.display.max_columns = 5
@@ -31,7 +31,7 @@ To work with the Hilltop class, first import the class and assign the base_url a
 
 .. code:: python
 
-    from hilltoppy import Hilltop
+    from hilltoppy import Hilltop, utils
 
     base_url = 'http://hilltop.gw.govt.nz/'
     hts = 'data.hts'
@@ -123,8 +123,8 @@ If you run into an issue with your Hilltop server, you can debug via the browser
 
 
 .. ipython:: python
-
-  url = build_url(base_url, hts, 'MeasurementList', site)
+  
+  url = utils.build_url(base_url, hts, 'MeasurementList', site)
   print(url)
 
 
