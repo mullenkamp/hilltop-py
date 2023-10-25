@@ -1,6 +1,6 @@
 {% set name = "hilltop-py" %}
 {% set package_name = "hilltoppy" %}
-{% set version = "2.2.2" %}
+{% set version = "2.3.0" %}
 
 package:
   name: {{ name|lower }}
