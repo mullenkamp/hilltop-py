@@ -146,7 +146,7 @@ def collection_list(base_url, hts, timeout=60, **kwargs):
     return collection_df
 
 
-def measurement_list(base_url, hts, site, measurement=None, output='dataframe', timeout=60, **kwargs):
+def measurement_list(base_url, hts, site, measurement=None, output=None, timeout=60, **kwargs):
     """
     Function to query a Hilltop server for the measurement summary of a site.
 
@@ -160,8 +160,8 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
         The site to be extracted.
     measurement : str or None
         The measurement type name.
-    output : dataframe or list of dict
-        The output object. Must be either dataframe or list of dict.
+    output : None
+        Obsolete
     timeout : int
         The http request timeout in seconds.
     **kwargs
@@ -238,7 +238,7 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
     return output1
 
 
-def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=False, tstype=None, timeout=60, **kwargs):
+def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=False, tstype=None, timeout=60, itemName=None, **kwargs):
     """
     Function to query a Hilltop web server for time series data associated with a Site and Measurement.
 
@@ -272,6 +272,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
         The time series type; one of Standard, Check, or Quality.
     timeout : int
         The http request timeout in seconds.
+    ItemName : str or None
+        The name of the measurement. If none, defaults to measurement
     **kwargs
         Optional keyword arguments passed to requests.
 
@@ -279,6 +281,9 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
     -------
     DataFrame
     """
+    ### default to measurement in case where itemName is used
+    if itemName is None:
+        itemName = measurement
     ### Make url
     url = build_url(base_url=base_url, hts=hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype)
 
@@ -309,7 +314,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             m_dict = {c.tag: convert_value(c.text) for c in m}
             m_name = m_dict.pop('ItemName')
 
-            if measurement.lower() == m_name.lower():
+            if itemName.lower() == m_name.lower():
                 if 'Format' in m_dict:
                     f_text_list = m_dict['Format'].split('.')
                     if len(f_text_list) == 2:
@@ -329,12 +334,8 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
 
         ## Check if the measurement actually came through with the GetData request
         ## Hilltop seems oddly inconsistant when it returns the measurements...
-        ## If not, then get the measurement data from the measurement_list function
         if 'Item' not in ds_dict1:
-            ml = measurement_list(base_url, hts, site, measurement=measurement, output='dict', timeout=timeout)
-            for m in ml:
-                if m['MeasurementName'].lower() == measurement.lower():
-                    ds_dict1.update(m)
+            raise ValueError('ItemName not found in the returned xml')
 
         ## Parse the ts data
         item_num = str(ds_dict1['Item'])
