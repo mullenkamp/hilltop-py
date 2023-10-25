@@ -6,12 +6,137 @@ This section will describe how to use the hilltop-py package. The functions depe
 Some of this documentation comes from the "Scripting.doc" file in the Hilltop installation folder. Please look at that doc for more details about the internals.
 
 
+.. ipython:: python
+   :suppress:
+
+   from hilltoppy import web_service as ws
+   from hilltoppy import Hilltop, build_url
+   import pandas as pd
+
+   pd.options.display.max_columns = 5
+
+   base_url = 'http://hilltop.gw.govt.nz/'
+   hts = 'data.hts'
+   site = 'Akatarawa River at Hutt Confluence'
+   collection = 'WQ / Rivers and Streams'
+   measurement = 'Total Phosphorus'
+   from_date = '2012-01-22 10:50'
+   to_date = '2018-04-13 14:05'
+
+
+Hilltop class
+--------------
+To work with the Hilltop class, first import the class and assign the base_url and hts.
+
+
+.. code:: python
+
+    from hilltoppy import Hilltop
+
+    base_url = 'http://hilltop.gw.govt.nz/'
+    hts = 'data.hts'
+
+
+All data in Hilltop are stored in hts files. The top level objects in Hilltop are Sites, which can be queried by calling the get_site_list method after the Hilltop class has been initialised. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the Easting and Northing geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longitude. There are other optional input parameters to site_list as well.
+
+
+.. ipython:: python
+
+  ht = Hilltop(base_url, hts)
+  sites_out1 = ht.get_site_list()
+  sites_out1.head()
+
+  sites_out2 = ht.get_site_list(location=True)
+  sites_out2.head()
+
+  sites_out3 = ht.get_site_list(location='LatLong',
+                                measurement=measurement)
+  sites_out3.head()
+
+
+Initialising the Hilltop class will check if the base_url and hts actually work. It will also throw an error if there are no sites available.
+
+Using the get_site_info method on one or more sites will allow you to get a lot more site data than what's available via the get_site_list method.
+
+
+.. ipython:: python
+
+  site = 'Akatarawa River at Hutt Confluence'
+  site_data = ht.get_site_info(site)
+
+  site_data
+
+
+A Hilltop Collection groups one or more Sites together. You can access all of the collections and associated sites via the get_collection_list method. Note that not all hts files (and organisations) have Collections.
+
+
+.. ipython:: python
+
+  collection1 = ht.get_collection_list()
+  collection1.head()
+
+  collection = 'WQ / Rivers and Streams'
+
+  sites_out4 = ht.get_site_list(collection=collection)
+  sites_out4.head()
+
+
+As you can see, you can also pass a collection name to the get_site_list method to only get the sites in that collection.
+
+The next step is to determine what types of Measurements are associated with the Sites. This is where we call the get_measurement_list method to see all of the Measurement names associated with one or ore Sites. 
+
+
+.. ipython:: python
+
+
+  site_meas = ht.get_measurement_list(site)
+  site_meas.head()
+
+
+There are a lot of data associated with the Site/Measurement combo. These include Units, Precision, From, and To. 
+
+If all you want to know is what Measurements exist in the hts file (regardless of the Sites associated with them), there's a method for that! It does take some time for the Hilltop server to process this request though.
+
+
+.. code:: python
+
+
+  meas = ht.get_measurement_names()
+
+
+Once you know the Site Name and Measurement Name you want time series data for, then you make a request via the get_data method. The get_data method has a variety of input parameters. Check the docstrings or package references for more details.
+
+.. ipython:: python
+
+  measurement = 'Total Phosphorus'
+  from_date = '2012-01-22 10:50'
+  to_date = '2018-04-13 14:05'
+
+  tsdata = ht.get_data(site, measurement, from_date=from_date,
+                       to_date=to_date)
+  tsdata.head()
+
+
+In addition to the time series value associated with the Site and Measurement, all other auxilliary data associated with the Site, Measurement, and Time will be returned. These auxilliary data can vary quite a bit and might not be consistant from one Regional Council to another.
+
+If you run into an issue with your Hilltop server, you can debug via the browser by using the build_url function.
+
+
+.. ipython:: python
+
+  url = build_url(base_url, hts, 'MeasurementList', site)
+  print(url)
+
+
+Legacy modules
+----------------
+
 Web service
------------
+~~~~~~~~~~~~
 The web service calls are simpler and more straightforward than the other two options. No extra setup is needed other than already having a Hilltop server to query. See the doc called "server.doc" for more details about the web service calls.
 
 Data access
-~~~~~~~~~~~
+____________
 The function names are based on the associated Hilltop function names from the COM module. There is also an additional function specific to water quality samples. Below are an actual working examples!
 
 Import the module and set the appropriate parameters.
@@ -29,21 +154,6 @@ Import the module and set the appropriate parameters.
     from_date = '2012-01-22 10:50'
     to_date = '2018-04-13 14:05'
 
-.. ipython:: python
-   :suppress:
-
-   from hilltoppy import web_service as ws
-   import pandas as pd
-
-   pd.options.display.max_columns = 5
-
-   base_url = 'http://hilltop.gw.govt.nz/'
-   hts = 'data.hts'
-   site = 'Akatarawa River at Hutt Confluence'
-   collection = 'WQ / Rivers and Streams'
-   measurement = 'Total Phosphorus'
-   from_date = '2012-01-22 10:50'
-   to_date = '2018-04-13 14:05'
 
 
 All data in Hilltop are stored in hts files. The top level objects in Hilltop are Sites, which can be queried by calling the site_list function. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the Easting and Northing geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longitude. There are other optional input parameters to site_list as well.
@@ -105,11 +215,11 @@ If you run into an issue with your Hilltop server, you can debug via the browser
 
 
 COM module
-------------
+~~~~~~~~~~~
 The following documentation describes how to set up and use the COM module functions. The COM module is no longer maintained!
 
 Install pywin32
-~~~~~~~~~~~~~~~
+________________
 pywin32 does not come installed by default. Install it like any other python package before continuing.
 
 .. code::
@@ -118,11 +228,11 @@ pywin32 does not come installed by default. Install it like any other python pac
 
 
 Register Hydrolib
-~~~~~~~~~~~~~~~~~
+__________________
 Hilltop Manager needs to be added into the Windows registry. This can be done for either the 32bit or the 64bit versions of Hilltop Manager, but if you have the choice pick the 64bit version in case you need to handle very large datasets. Find either version of Hilltop Manager,  and open the program (called Manager.exe) as administrator. Load in an hts file (this allows you to access the configuration menus). Go to the tab called ‘Configure’ then go to ‘installation’. It will ask you if you want Hilltop registered, and of course say yes.
 
 Run makepy_hilltop
-~~~~~~~~~~~~~~~~~~
+__________________
 The COM utility must be built for hilltop to access it's functions. This is all wrapped in a single function. Once Hydrolib is properly registered, run makepy_hilltop without any parameters and you should be ready to use the COM functions.
 
 .. code-block:: python
@@ -133,7 +243,7 @@ The COM utility must be built for hilltop to access it's functions. This is all 
 
 
 Data access
-~~~~~~~~~~~
+_____________
 The function names are based on the associated Hilltop function names. Since functionally, accessing quantity data is quite different (from the COM) as compared to the quality data, there are two functions accessing the time series data.
 
 .. code-block:: python
@@ -150,15 +260,15 @@ The function names are based on the associated Hilltop function names. Since fun
   print(tsdata)
 
 Native Python module
---------------------
+~~~~~~~~~~~~~~~~~~~~~~
 The following documentation describes how to set up and use the module functions built upon the native python module. The Native Hilltop Python module is no longer maintained!
 
 Python path to Hilltop.pyd
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+____________________________
 First, make sure that the Hilltop.pyd exists in either the root directory of the Hilltop directory or in the x64 directory (depending on your python installation). Open manager.exe, go to configure, and click on Python. It simply adds the Python path to the windows environment variables so that Python knows where to load the Hilltop.pyd from. This can also be modified from within Spyder or the sys module.
 
 Data access
-~~~~~~~~~~~
+_________________
 The function names are similar to the COM module except that one function covers both quantity and quality data.
 
 .. code-block:: python
