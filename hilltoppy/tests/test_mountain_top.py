@@ -106,39 +106,6 @@ def test_get_data1(data):
 #################################################
 ### Other tests
 
-# base_url = 'http://odp.es.govt.nz/'
-# hts = 'FlowNat.hts'
-# site = 'Aparima River at Thornbury'
-# sites = ['Aparima River at Thornbury', 'Winton Stream at Thomsons Crossing']
-# measurement = 'velocity [gauging results]'
-# measurement = 'Flow'
-# measurement = 'nitrogen (nitrate)'
-# from_date=None
-# to_date=None
-# agg_method=None
-# agg_interval=None
-# alignment='00:00'
-# quality_codes=False
-# apply_precision=False
-# tstype=None
-
-# self = Hilltop(base_url, hts)
-
-# site_list1 = self.get_site_list(location='LatLong')
-# site_list2 = self.get_site_list(location='LatLong', measurement=measurement)
-
-# site_info1 = self.get_site_info(site)
-# site_info2 = self.get_site_info(sites)
-
-# m_names1 = self.get_measurement_names()
-# m_names2 = self.get_measurement_names(True)
-
-# mtypes1 = self.get_measurement_list(site)
-# mtypes2 = self.get_measurement_list(sites)
-# mtypes3 = self.get_measurement_list(sites, measurement=measurement)
-
-# res1 = self.get_data(site, measurement)
-
 
 
 

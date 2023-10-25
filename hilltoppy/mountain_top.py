@@ -6,11 +6,10 @@ Created on 2022-07-25
 """
 import pandas as pd
 import numpy as np
-from hilltoppy.utils import convert_value, DataSource, Measurement, get_hilltop_xml, convert_mowsecs
+from hilltoppy.utils import convert_value, DataSource, Measurement, get_hilltop_xml, convert_mowsecs, build_url
 from hilltoppy import web_service as ws
 from typing import List, Optional, Union
 import orjson
-import copy
 
 ############################################
 ### Parameters
@@ -41,20 +40,21 @@ class Hilltop(object):
             Optional keyword arguments passed to requests.
 
         """
+        self.timeout = timeout
+        self.base_url = base_url
+        self.hts = hts
+        self._measurements = {}
+        self._requests_kwargs = kwargs
+
         ## Test out Hilltop url
-        sites = ws.site_list(base_url, hts, timeout=timeout, **kwargs)
+        sites = self.get_site_list()
 
         if sites.empty:
             raise ValueError('No sites found for the base_url and hts combo.')
 
         sites = sites['SiteName'].tolist()
 
-        self.timeout = timeout
-        self.base_url = base_url
-        self.hts = hts
         self.available_sites = sites
-        self._measurements = {}
-        self._requests_kwargs = kwargs
 
 
     def get_site_list(self, location: Union[str, bool] = None, measurement: str = None, collection: str = None, site_parameters: List[str] = None):
@@ -76,7 +76,7 @@ class Hilltop(object):
         -------
         DataFrame
         """
-        url = ws.build_url(self.base_url, self.hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
+        url = build_url(self.base_url, self.hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
         tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         site_tree = tree1.findall('Site')
@@ -115,7 +115,7 @@ class Hilltop(object):
         else:
             cols = ['MeasurementName']
 
-        url = ws.build_url(self.base_url, self.hts, 'MeasurementList')
+        url = build_url(self.base_url, self.hts, 'MeasurementList')
         tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         if tree1.find('Error') is not None:
@@ -165,7 +165,7 @@ class Hilltop(object):
         if site not in self.available_sites:
             raise ValueError('Requested site is not in hts file.')
 
-        url = ws.build_url(self.base_url, self.hts, 'SiteInfo', site=site)
+        url = build_url(self.base_url, self.hts, 'SiteInfo', site=site)
         tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         site_tree = tree1.find('Site')
@@ -222,7 +222,7 @@ class Hilltop(object):
         -------
         DataFrame
         """
-        url = ws.build_url(self.base_url, self.hts, 'CollectionList')
+        url = build_url(self.base_url, self.hts, 'CollectionList')
         tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
 
         collection_tree = tree1.findall('Collection')
@@ -267,7 +267,7 @@ class Hilltop(object):
             raise ValueError('Requested site is not in hts file.')
 
         ### Make url
-        url = ws.build_url(self.base_url, self.hts, 'MeasurementList', site, measurement)
+        url = build_url(self.base_url, self.hts, 'MeasurementList', site, measurement)
 
         ### Request data and load in xml
         tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
@@ -432,7 +432,7 @@ class Hilltop(object):
             response_format = None
 
         ## Make url
-        url = ws.build_url(base_url=self.base_url, hts=self.hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype, response_format=response_format)
+        url = build_url(base_url=self.base_url, hts=self.hts, request='GetData', site=site, measurement=measurement, from_date=from_date, to_date=to_date, agg_method=agg_method, agg_interval=agg_interval, alignment=alignment, quality_codes=quality_codes, tstype=tstype, response_format=response_format)
 
         ## Request data and load in xml
         tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)

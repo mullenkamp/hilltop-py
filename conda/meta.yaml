@@ -1,5 +1,6 @@
 {% set name = "hilltop-py" %}
-{% set version = "2.2.4" %}
+{% set package_name = "hilltoppy" %}
+{% set version = "2.3.0" %}
 # {% set sha256 = "72a156e328247c91cb7f5440ffa98069c0090892f8d9d07fd57e36c0611a0403" %}
 
 # sha256 is the prefered checksum -- you can get it for a file with:
@@ -13,7 +14,7 @@ package:
 
 source:
   fn: {{ name }}-{{ version }}.tar.gz
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ package_name }}-{{ version }}.tar.gz
   # If getting the source from GitHub remove the line above
   # uncomment the line below and modify as needed
   # url: https://github.com/simplejson/{{ name }}/archive/{{ version }}.tar.gz
@@ -34,6 +35,7 @@ requirements:
   build:
     - python >=3.8
     - setuptools
+    - hatchling
   run:
     - python >=3.8
     - pandas
@@ -49,7 +51,7 @@ about:
   home: https://github.com/mullenkamp/hilltop-py
   license: Apache License 2.0
   license_family: APACHE
-  summary: Functions to extract data from Hilltop
+  summary: Tools to extract data from Hilltop
   description: "Repository for Hilltop Python tools\r\n=============================================================\r\n\r\nThis git repository contains the Hilltop Python tools and associated documentation.\r\
     \n"
   doc_url: ''

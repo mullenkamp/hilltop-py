@@ -1,8 +1,29 @@
 Package References
 ===================
 
-COM module
+Hilltop class
 --------------
+
+.. autoclass:: Hilltop
+
+.. automethod:: Hilltop.get_site_list
+
+.. automethod:: Hilltop.get_site_info
+
+.. automethod:: Hilltop.get_measurement_names
+
+.. automethod:: Hilltop.get_collection_list
+
+.. automethod:: Hilltop.get_measurement_list
+
+.. automethod:: Hilltop.get_data
+
+
+Legacy modules
+---------------
+
+COM module
+~~~~~~~~~~~
 
 .. autofunction:: hilltoppy.com.makepy_hilltop
 
@@ -13,7 +34,7 @@ COM module
 .. autofunction:: hilltoppy.com.get_data_quality
 
 Native Hilltop Python module
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: hilltoppy.hilltop.site_list
 
@@ -22,7 +43,7 @@ Native Hilltop Python module
 .. autofunction:: hilltoppy.hilltop.get_data
 
 Web service
----------------
+~~~~~~~~~~~~
 
 .. autofunction:: hilltoppy.web_service.build_url
 
