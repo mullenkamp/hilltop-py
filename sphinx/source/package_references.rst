@@ -1,22 +1,17 @@
 Package References
 ===================
 
+.. currentmodule:: hilltoppy
+
+
 Hilltop class
 --------------
 
-.. autoclass:: hilltoppy.Hilltop
+.. autosummary::
+    :toctree: generated/
+    :nosignatures:
 
-.. automethod:: hilltoppy.Hilltop.get_site_list
-
-.. automethod:: hilltoppy.Hilltop.get_site_info
-
-.. automethod:: hilltoppy.Hilltop.get_measurement_names
-
-.. automethod:: hilltoppy.Hilltop.get_collection_list
-
-.. automethod:: hilltoppy.Hilltop.get_measurement_list
-
-.. automethod:: hilltoppy.Hilltop.get_data
+    Hilltop
 
 
 Legacy modules
