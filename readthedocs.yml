@@ -1,8 +1,0 @@
-formats:
-    - pdf
-    - epub
-conda:
-    file: sphinx/env.yml
-python:
-    version: 3
-    setup_py_install: true
