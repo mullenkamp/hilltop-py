@@ -4,19 +4,19 @@ Package References
 Hilltop class
 --------------
 
-.. autoclass:: Hilltop
+.. autoclass:: hilltoppy.Hilltop
 
-.. automethod:: Hilltop.get_site_list
+.. automethod:: hilltoppy.Hilltop.get_site_list
 
-.. automethod:: Hilltop.get_site_info
+.. automethod:: hilltoppy.Hilltop.get_site_info
 
-.. automethod:: Hilltop.get_measurement_names
+.. automethod:: hilltoppy.Hilltop.get_measurement_names
 
-.. automethod:: Hilltop.get_collection_list
+.. automethod:: hilltoppy.Hilltop.get_collection_list
 
-.. automethod:: Hilltop.get_measurement_list
+.. automethod:: hilltoppy.Hilltop.get_measurement_list
 
-.. automethod:: Hilltop.get_data
+.. automethod:: hilltoppy.Hilltop.get_data
 
 
 Legacy modules
