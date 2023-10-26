@@ -9,6 +9,7 @@ Hilltop class
 
 .. autosummary::
     :toctree: generated
+    :recursive:
 
     Hilltop
 
