@@ -146,7 +146,7 @@ def collection_list(base_url, hts, timeout=60, **kwargs):
     return collection_df
 
 
-def measurement_list(base_url, hts, site, measurement=None, output='dataframe', timeout=60, **kwargs):
+def measurement_list(base_url, hts, site, measurement=None, timeout=60, **kwargs):
     """
     Function to query a Hilltop server for the measurement summary of a site.
 
@@ -160,8 +160,6 @@ def measurement_list(base_url, hts, site, measurement=None, output='dataframe', 
         The site to be extracted.
     measurement : str or None
         The measurement type name.
-    output : dataframe or list of dict
-        The output object. Must be either dataframe or list of dict.
     timeout : int
         The http request timeout in seconds.
     **kwargs
