@@ -3,10 +3,15 @@ version: 2
 build:
   os: "ubuntu-22.04"
   tools:
-    python: "mambaforge-22.9"
+    # python: "mambaforge-22.9"
+    python: "3.10"
 
 formats:
     - pdf
     - epub
-conda:
-    environment: sphinx/env.yml
+# conda:
+#     environment: sphinx/env.yml
+
+python:
+  install:
+    - requirements: sphinx/requirements.txt
