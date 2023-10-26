@@ -28,7 +28,7 @@ This section will describe how to use the hilltop-py package. The functions depe
 
 Hilltop class
 --------------
-To work with the Hilltop class, first import the class and assign the **base_url** and **hts**. All data in Hilltop are stored in hts files. Consequently, one Regional Council may have may hts files for different datasets.
+To work with the Hilltop class, first import the class and assign the **base_url** and **hts**. All data in Hilltop are stored in hts files. Consequently, one Regional Council may have hts files for different datasets.
 
 
 .. code:: python
@@ -39,7 +39,7 @@ To work with the Hilltop class, first import the class and assign the **base_url
     hts = 'data.hts'
 
 
-The next step is to initialise the **Hilltop class**. This checks to see if the Hilltop server exists and that data can be recieved from it. It will also throw an error if there are no sites available.
+The next step is to initialise the **Hilltop class**. This checks to see if the Hilltop server exists and that data can be retrieved from it. It will also throw an error if there are no sites available.
 
 .. ipython:: python
 
@@ -109,7 +109,7 @@ The next step is to determine what types of **Measurements** are associated with
 
 There are a lot of data associated with Site/Measurement combos. These include Units, Precision, From, and To. 
 
-If all you want to know is what measurements exist in the hts file (regardless of the sites associated with them), there's a method for that! It does take some time for the Hilltop server to process this request though.
+If all you want to know is what measurements exist in the hts file (regardless of the sites associated with them), there's a method for that! It does take some time for the Hilltop server to process this request though (and the Hilltop server might fail if the hts file is too big).
 
 
 .. code:: python
