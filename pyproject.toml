@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hilltop-py"
-version = '2.3.0'
+version = '2.3.1'
 description = "Functions to access Hilltop data"
 requires-python = ">=3.8"
 readme = "README.rst"
