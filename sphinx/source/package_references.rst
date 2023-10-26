@@ -7,11 +7,15 @@ Package References
 Hilltop class
 --------------
 
-.. autosummary::
-    :toctree: generated
-    :recursive:
+.. .. autosummary::
+..     :toctree: generated
+..     :recursive:
 
-    Hilltop
+..     Hilltop
+
+.. autoclass:: Hilltop
+  :members:
+  :undoc-members:
 
 
 Legacy modules
