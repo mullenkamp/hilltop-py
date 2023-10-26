@@ -17,6 +17,10 @@ Hilltop class
   :members:
   :undoc-members:
 
+.. automethod:: Hilltop.get_site_list
+
+
+
 
 Legacy modules
 ---------------
