@@ -8,8 +8,7 @@ Hilltop class
 --------------
 
 .. autosummary::
-    :toctree: generated/
-    :nosignatures:
+    :toctree: generated
 
     Hilltop
 
