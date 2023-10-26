@@ -1,0 +1,4 @@
+hilltop-py==2.3.0
+sphinx_rtd_theme
+numpydoc
+ipython
