@@ -26,7 +26,7 @@ class Hilltop(object):
     """
     def __init__(self, base_url: str, hts: str, timeout: int = 60, **kwargs):
         """
-        Base Hilltop function.
+        Base Hilltop class.
 
         Parameters
         ----------
@@ -63,13 +63,13 @@ class Hilltop(object):
 
         Parameters
         ----------
-        location : str or bool
+        location : str, bool, or None
             Should the location be returned? Only applies to the SiteList request. 'Yes' returns the Easting and Northing, while 'LatLong' returns NZGD2000 lat lon coordinates.
         measurement : str or None
             The measurement name.
-        collection : str
+        collection : str or None
             Get site list via a collection.
-        site_parameters : list
+        site_parameters : list or None
             A list of the site parameters to be returned with the SiteList request. Make a call to site_info to find all of the possible options.
 
         Returns
@@ -249,7 +249,7 @@ class Hilltop(object):
 
     def _get_measurement_list_single(self, site, measurement=None):
         """
-        Function to query a Hilltop server for the measurement summary of a site.
+        Method to query a Hilltop server for the measurement summary of a site.
 
         Parameters
         ----------
@@ -343,7 +343,7 @@ class Hilltop(object):
 
     def get_measurement_list(self, sites: Union[str, List[str]] = None, measurement: str = None):
         """
-        Function to query a Hilltop server for the measurement summary of a site or sites.
+        Method to query a Hilltop server for the measurement summary of a site or sites.
 
         Parameters
         ----------
@@ -377,7 +377,7 @@ class Hilltop(object):
 
     def _get_data_single(self, site, measurement, from_date=None, to_date=None, agg_method=None, agg_interval=None, alignment='00:00', quality_codes=False, apply_precision=False, tstype=None):
         """
-        Function to query a Hilltop web server for time series data associated with a Site and Measurement.
+        Method to query a Hilltop web server for time series data associated with a Site and Measurement.
 
         Parameters
         ----------
@@ -544,7 +544,7 @@ class Hilltop(object):
 
     def get_data(self, sites: Union[str, List[str]], measurements: Union[str, List[str]], from_date: str = None, to_date: str = None, agg_method: str = None, agg_interval: str = None, alignment: str = '00:00', quality_codes: bool = False, apply_precision: bool = False, tstype: str = None):
         """
-        Function to query a Hilltop web server for time series data associated with a Site and Measurement.
+        Method to query a Hilltop web server for time series data associated with a Site and Measurement.
 
         Parameters
         ----------
@@ -556,11 +556,11 @@ class Hilltop(object):
             The start date in the format 2001-01-01. None will put it to the beginning of the time series.
         to_date : str or None
             The end date in the format 2001-01-01. None will put it to the end of the time series.
-        agg_method : str
+        agg_method : str or None
             The aggregation method to resample the data. e.g. Average, Total, Moving Average, Extrema.
-        agg_interval : str
+        agg_interval : str or None
             The aggregation interval for the agg_method. e.g. '1 day', '1 week', '1 month'.
-        alignment : str
+        alignment : str or None
             The start time alignment when agg_method is not None.
         quality_codes : bool
             Should the quality codes get returned?
