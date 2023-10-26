@@ -3,7 +3,9 @@ How to use hilltop-py
 
 This section will describe how to use the hilltop-py package. The functions depend heavily on the Pandas package. Nearly all outputs are Pandas DataFrames.
 
-Some of this documentation comes from the "Scripting.doc" file in the Hilltop installation folder. Please look at that doc for more details about the internals.
+.. note::
+  The API and terminology used in hilltop-py attempts to match that of the API and terminology of Hilltop. 
+  If you want more details about the internals of Hilltop, please look at the "Scripting.doc" file in the Hilltop installation folder if the doc is available to you.
 
 
 .. ipython:: python
@@ -26,7 +28,7 @@ Some of this documentation comes from the "Scripting.doc" file in the Hilltop in
 
 Hilltop class
 --------------
-To work with the Hilltop class, first import the class and assign the base_url and hts.
+To work with the Hilltop class, first import the class and assign the **base_url** and **hts**. All data in Hilltop are stored in hts files. Consequently, one Regional Council may have may hts files for different datasets.
 
 
 .. code:: python
@@ -37,24 +39,36 @@ To work with the Hilltop class, first import the class and assign the base_url a
     hts = 'data.hts'
 
 
-All data in Hilltop are stored in hts files. The top level objects in Hilltop are Sites, which can be queried by calling the get_site_list method after the Hilltop class has been initialised. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the Easting and Northing geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longitude. There are other optional input parameters to site_list as well.
-
+The next step is to initialise the **Hilltop class**. This checks to see if the Hilltop server exists and that data can be recieved from it. It will also throw an error if there are no sites available.
 
 .. ipython:: python
 
   ht = Hilltop(base_url, hts)
+
+
+The Hilltop class uses the requests python package for sending and recieving data. You can pass any keyword args when initialising the Hilltop class to the requests.get function. For example, there are a couple Regional Councils that have issues with their SSL certificates. To make the Hilltop class work in this situation, you'll need to pass the verify=False parameter to the Hilltop class. But only do this if you have to. 
+
+.. code:: python
+
+  ht = Hilltop(base_url, hts, verify=False)
+
+
+The top level objects in Hilltop are **Sites**, which can be queried by calling the get_site_list method after the Hilltop class has been initialised. Calling it with only the base_url and hts will return all of the sites in an hts file. Adding the parameter location=True will return the Easting and Northing geographic coordinates (EPSG 2193), or location='LatLong' will return the Latitude and Longitude. There are other optional input parameters to get_site_list as well.
+
+
+.. ipython:: python
+
   sites_out1 = ht.get_site_list()
   sites_out1.head()
 
   sites_out2 = ht.get_site_list(location=True)
   sites_out2.head()
 
+  measurement = 'Total Phosphorus'
   sites_out3 = ht.get_site_list(location='LatLong',
                                 measurement=measurement)
   sites_out3.head()
 
-
-Initialising the Hilltop class will check if the base_url and hts actually work. It will also throw an error if there are no sites available.
 
 Using the get_site_info method on one or more sites will allow you to get a lot more site data than what's available via the get_site_list method.
 
@@ -67,7 +81,7 @@ Using the get_site_info method on one or more sites will allow you to get a lot 
   site_data
 
 
-A Hilltop Collection groups one or more Sites together. You can access all of the collections and associated sites via the get_collection_list method. Note that not all hts files (and organisations) have Collections.
+A Hilltop **Collection** groups one or more sites together. You can access all of the collections and associated sites via the get_collection_list method. Note that not all hts files (and organisations) have collections.
 
 
 .. ipython:: python
@@ -83,7 +97,7 @@ A Hilltop Collection groups one or more Sites together. You can access all of th
 
 As you can see, you can also pass a collection name to the get_site_list method to only get the sites in that collection.
 
-The next step is to determine what types of Measurements are associated with the Sites. This is where we call the get_measurement_list method to see all of the Measurement names associated with one or ore Sites. 
+The next step is to determine what types of **Measurements** are associated with the sites. This is where we call the get_measurement_list method to see all of the measurement names associated with one or more sites. 
 
 
 .. ipython:: python
@@ -93,13 +107,12 @@ The next step is to determine what types of Measurements are associated with the
   site_meas.head()
 
 
-There are a lot of data associated with the Site/Measurement combo. These include Units, Precision, From, and To. 
+There are a lot of data associated with Site/Measurement combos. These include Units, Precision, From, and To. 
 
-If all you want to know is what Measurements exist in the hts file (regardless of the Sites associated with them), there's a method for that! It does take some time for the Hilltop server to process this request though.
+If all you want to know is what measurements exist in the hts file (regardless of the sites associated with them), there's a method for that! It does take some time for the Hilltop server to process this request though.
 
 
 .. code:: python
-
 
   meas = ht.get_measurement_names()
 
@@ -117,7 +130,7 @@ Once you know the Site Name and Measurement Name you want time series data for, 
   tsdata.head()
 
 
-In addition to the time series value associated with the Site and Measurement, all other auxilliary data associated with the Site, Measurement, and Time will be returned. These auxilliary data can vary quite a bit and might not be consistant from one Regional Council to another.
+In addition to the time series value associated with the site and measurement, all other auxilliary data associated with the SiteName, MeasurementName, and Time will be returned. These auxilliary data can vary quite a bit and might not be consistant from one Regional Council to another.
 
 If you run into an issue with your Hilltop server, you can debug via the browser by using the build_url function.
 
@@ -130,6 +143,9 @@ If you run into an issue with your Hilltop server, you can debug via the browser
 
 Legacy modules
 ----------------
+
+.. note::
+  This section is only for achiving the legacy modules. Users should not normally use these. Please use the new Hilltop class described above.
 
 Web service
 ~~~~~~~~~~~~
