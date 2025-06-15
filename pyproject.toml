@@ -46,3 +46,8 @@ Homepage = "https://github.com/mullenkamp/hilltop-py"
 include = [
     "/hilltoppy",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "/hilltoppy",
+]
