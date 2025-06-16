@@ -34,7 +34,6 @@ build:
 requirements:
   build:
     - python >=3.8
-    - setuptools
     - hatchling
   run:
     - python >=3.8
