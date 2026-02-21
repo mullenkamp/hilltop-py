@@ -214,7 +214,7 @@ def measurement_list(base_url, hts, site, measurement=None, timeout=60, **kwargs
                             m_dict1.update(ds_dict1)
 
                             data_list.append(m_dict1)
-                    except:
+                    except Exception:
                         pass
 
     ## Convert output

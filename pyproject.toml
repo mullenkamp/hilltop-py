@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hilltop-py"
-version = '2.3.1'
+dynamic = ["version"]
 description = "Functions to access Hilltop data"
 requires-python = ">=3.8"
 readme = "README.rst"
@@ -32,9 +32,19 @@ dependencies = [
     "requests",
 ]
 
+[dependency-groups]
+dev = [
+  "spyder-kernels==2.5.2",
+  "black",
+  "mypy",
+  "ruff",
+  "pytest",
+  "pytest-cov",
+]
+
 [project.optional-dependencies]
 dev = [
-  "spyder-kernels==2.4",
+  "spyder-kernels==2.5.2",
   "matplotlib",
   "pytest",
 ]
@@ -51,3 +61,6 @@ include = [
 packages = [
     "/hilltoppy",
 ]
+
+[tool.hatch.version]
+path = "booklet/__init__.py"

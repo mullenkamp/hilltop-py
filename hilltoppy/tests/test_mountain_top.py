@@ -91,11 +91,12 @@ def test_collection_list(data):
     assert len(cl) > 180
 
 
-# @pytest.mark.parametrize('data', [test_data1])
-# def test_measurement_names(data):
-#     m_names1 = self.get_measurement_names()
-#     m_names2 = self.get_measurement_names(True)
-#     assert len(m_names1) > 100
+@pytest.mark.skip(reason='MeasurementList without site is a heavy query that often times out')
+@pytest.mark.parametrize('data', [test_data1])
+def test_measurement_names(data):
+    m_names1 = self.get_measurement_names()
+    assert len(m_names1) > 100
+    assert 'MeasurementName' in m_names1.columns
 
 
 @pytest.mark.parametrize('data', [test_data1])
@@ -103,12 +104,79 @@ def test_get_data1(data):
     tsdata1 = self.get_data(data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'])
     assert len(tsdata1) > 70
 
-#################################################
-### Other tests
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_site_list_latlong(data):
+    sites = self.get_site_list(location='LatLong')
+    assert len(sites) > 1000
+    assert 'Latitude' in sites.columns
+    assert 'Longitude' in sites.columns
 
 
+@pytest.mark.parametrize('data', [test_data1])
+def test_site_list_with_measurement(data):
+    sites = self.get_site_list(measurement=data['measurement'])
+    assert len(sites) > 1
+    assert 'SiteName' in sites.columns
 
 
+@pytest.mark.parametrize('data', [test_data1])
+def test_site_info_multiple(data):
+    two_sites = [data['site'], data['site']]
+    site_data = self.get_site_info(two_sites)
+    assert len(site_data) == 2
+    assert 'SiteName' in site_data.columns
+    assert all(site_data['SiteName'] == data['site'])
+
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_measurement_list_with_filter(data):
+    mtype_df = self.get_measurement_list(data['site'], measurement=data['measurement'])
+    assert len(mtype_df) >= 1
+    assert all(mtype_df['MeasurementName'].str.lower() == data['measurement'].lower())
+
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_measurement_list_columns(data):
+    mtype_df = self.get_measurement_list(data['site'])
+    for col in ['SiteName', 'MeasurementName', 'From', 'To', 'DataType']:
+        assert col in mtype_df.columns
+
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_measurement_cache(data):
+    self._measurements = {}
+    self.get_measurement_list(data['site'])
+    assert data['site'] in self._measurements
+    assert len(self._measurements[data['site']]) > 0
+
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_get_data_columns(data):
+    tsdata = self.get_data(data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'])
+    for col in ['SiteName', 'MeasurementName', 'Time', 'Value']:
+        assert col in tsdata.columns
+    assert np.issubdtype(tsdata['Time'].dtype, np.datetime64)
+    assert all(tsdata['SiteName'] == data['site'])
+    assert all(tsdata['MeasurementName'] == data['measurement'])
+
+
+@pytest.mark.parametrize('data', [test_data1])
+def test_get_data_quality_codes(data):
+    tsdata = self.get_data(data['site'], data['measurement'], from_date=data['from_date'], to_date=data['to_date'], quality_codes=True)
+    assert len(tsdata) > 70
+    for col in ['SiteName', 'MeasurementName', 'Time', 'Value']:
+        assert col in tsdata.columns
+
+
+def test_invalid_site_raises():
+    with pytest.raises(ValueError, match='not in hts file'):
+        self.get_site_info('This Site Does Not Exist 12345')
+
+
+def test_invalid_site_measurement_raises():
+    with pytest.raises(ValueError, match='not in hts file'):
+        self.get_measurement_list('This Site Does Not Exist 12345')
 
 
 
