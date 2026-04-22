@@ -38,8 +38,7 @@ requirements:
   run:
     - python >=3.8
     - pandas
-    - pydantic <2
-    - orjson
+    - pydantic >=2
     - requests
 
 test:

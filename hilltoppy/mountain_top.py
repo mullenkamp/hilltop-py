@@ -6,11 +6,9 @@ Created on 2022-07-25
 """
 import pandas as pd
 import numpy as np
-from hilltoppy.utils import convert_value, DataSource, Measurement, get_hilltop_xml, convert_mowsecs, build_url
+from hilltoppy.utils import convert_value, get_hilltop_xml, convert_mowsecs, build_url
 from hilltoppy import web_service as ws
-from typing import List, Optional, Union
-import orjson
-
+from typing import List, Union
 ############################################
 ### Parameters
 
@@ -76,25 +74,7 @@ class Hilltop(object):
         -------
         DataFrame
         """
-        url = build_url(self.base_url, self.hts, 'SiteList', location=location, measurement=measurement, collection=collection, site_parameters=site_parameters)
-        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
-
-        site_tree = tree1.findall('Site')
-
-        if site_tree:
-            sites_list = []
-            for s in site_tree:
-                name = s.attrib['Name']
-                site_dict = {'SiteName': name}
-                for data in s:
-                    site_dict[data.tag] = convert_value(data.text)
-                sites_list.append(site_dict)
-
-            sites_df = pd.DataFrame(sites_list)
-        else:
-            sites_df = pd.DataFrame(columns=['SiteName'])
-
-        return sites_df
+        return ws.site_list(self.base_url, self.hts, location=location, measurement=measurement, collection=collection, site_parameters=site_parameters, timeout=self.timeout, **self._requests_kwargs)
 
 
     def get_measurement_names(self, detailed=False):
@@ -165,25 +145,7 @@ class Hilltop(object):
         if site not in self.available_sites:
             raise ValueError('Requested site is not in hts file.')
 
-        url = build_url(self.base_url, self.hts, 'SiteInfo', site=site)
-        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
-
-        site_tree = tree1.find('Site')
-
-        if site_tree is not None:
-            data_dict = {'SiteName': site}
-            for data in site_tree:
-                key = data.tag
-                if data.text is not None:
-                    val = convert_value(data.text)
-
-                    data_dict[key] = val
-
-            site_df = pd.DataFrame([data_dict])
-        else:
-            site_df = pd.DataFrame(columns=['SiteName'])
-
-        return site_df
+        return ws.site_info(self.base_url, self.hts, site, timeout=self.timeout, **self._requests_kwargs)
 
 
     def get_site_info(self, sites: Union[str, List[str]] = None):
@@ -222,29 +184,7 @@ class Hilltop(object):
         -------
         DataFrame
         """
-        url = build_url(self.base_url, self.hts, 'CollectionList')
-        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
-
-        collection_tree = tree1.findall('Collection')
-
-        if collection_tree:
-            collection_list = []
-            for colitem in collection_tree:
-                colname = colitem.attrib['Name']
-                data_list = []
-                for site in colitem:
-                    row = dict([(col.tag, col.text.encode('ascii', 'ignore').decode()) for col in site if col.text is not None])
-                    # if 'Measurement' in row:
-                    #     row['Measurement'] = row['Measurement'].lower()
-                    data_list.append(row)
-                col_df = pd.DataFrame(data_list)
-                col_df['CollectionName'] = colname
-                collection_list.append(col_df)
-            collection_df = pd.concat(collection_list).reset_index(drop=True).rename(columns={'Measurement': 'MeasurementName', 'Filename': 'FileName'})
-        else:
-            collection_df = pd.DataFrame(columns=['SiteName', 'MeasurementName', 'CollectionName', 'FileName'])
-
-        return collection_df
+        return ws.collection_list(self.base_url, self.hts, timeout=self.timeout, **self._requests_kwargs)
 
 
     def _get_measurement_list_single(self, site, measurement=None):
@@ -266,77 +206,23 @@ class Hilltop(object):
         if site not in self.available_sites:
             raise ValueError('Requested site is not in hts file.')
 
-        ### Make url
-        url = build_url(self.base_url, self.hts, 'MeasurementList', site, measurement)
-
-        ### Request data and load in xml
-        tree1 = get_hilltop_xml(url, timeout=self.timeout, **self._requests_kwargs)
-
-        if tree1.find('Error') is not None:
-            return pd.DataFrame(columns=['SiteName', 'MeasurementName'])
-
-        data_sources = tree1.findall('DataSource')
-
-        ### Extract data into list of dict - to represent the Hilltop structure
         if site not in self._measurements:
             self._measurements[site] = {}
 
-        data_list = []
+        try:
+            output1 = ws.measurement_list(self.base_url, self.hts, site, measurement=measurement, timeout=self.timeout, **self._requests_kwargs)
+        except ValueError:
+            return pd.DataFrame(columns=['SiteName', 'MeasurementName'])
 
-        if data_sources:
-            for d in data_sources:
-                ds_dict = {c.tag: c.text.encode('ascii', 'ignore').decode() for c in d if c.text is not None}
-                if 'DataType' in ds_dict:
-                    if not ds_dict['DataType'] in ['HydSection', 'HydFacecard']:
-                        ds_dict['SiteName'] = site
-                        ds_dict['DataSourceName'] = d.attrib['Name']
-                        try:
-                            ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
+        ## Populate cache
+        if not output1.empty:
+            for _, row in output1.iterrows():
+                row_dict = {k: v for k, v in row.to_dict().items() if pd.notna(v)}
+                self._measurements[site][row['MeasurementName'].lower()] = row_dict
 
-                            m_all = d.findall('Measurement')
-                            for m in m_all:
-                                m_dict = {c.tag: convert_value(c.text) for c in m}
-
-                                if 'Format' in m_dict:
-                                    f_text_list = m_dict['Format'].split('.')
-                                    if len(f_text_list) == 2:
-                                        precision = len(f_text_list[1])
-                                    else:
-                                        precision = 0
-                                else:
-                                    precision = 0
-
-                                m_dict['Precision'] = precision
-
-                                m_dict['MeasurementName'] = m_dict.pop('RequestAs')
-
-                                m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
-                                m_dict1.update(ds_dict1)
-
-                                self._measurements[site][m_dict['MeasurementName'].lower()] = m_dict1
-
-                                data_list.append(m_dict1)
-                        except:
-                            pass
-
-        ## Convert output
-        if data_list:
-            output1 = pd.DataFrame(data_list)
-
-            output1['From'] = pd.to_datetime(output1['From'])
-            output1['To'] = pd.to_datetime(output1['To'])
-
-            if 'VMStart' in output1:
-                output1['VMStart'] = pd.to_datetime(output1['VMStart'])
-            if 'VMFinish' in output1:
-                output1['VMFinish'] = pd.to_datetime(output1['VMFinish'])
-
-            output1 = output1.set_index(['SiteName', 'MeasurementName']).reset_index()
-
-            if isinstance(measurement, str):
-                output1 = output1[output1['MeasurementName'].str.lower() == measurement.lower()].copy()
-        else:
-            output1 = pd.DataFrame(columns=['SiteName', 'MeasurementName'])
+        ## Filter by measurement
+        if isinstance(measurement, str):
+            output1 = output1[output1['MeasurementName'].str.lower() == measurement.lower()].copy()
 
         return output1
 
@@ -587,115 +473,3 @@ class Hilltop(object):
         res_df = pd.concat(res_df_list)
 
         return res_df
-
-
-##################################################
-### Testing
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
