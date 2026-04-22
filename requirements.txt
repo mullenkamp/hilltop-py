@@ -1,4 +1,3 @@
 pandas
-pydantic<2
-orjson
+pydantic>=2
 requests

@@ -7,7 +7,6 @@ Created on Tue May 29 10:12:11 2018
 import pandas as pd
 import numpy as np
 from hilltoppy.utils import convert_value, DataSource, Measurement, get_hilltop_xml, build_url
-import orjson
 
 
 ########################################
@@ -191,7 +190,7 @@ def measurement_list(base_url, hts, site, measurement=None, timeout=60, **kwargs
                     data_source_name = d.attrib['Name']
                     ds_dict['DataSourceName'] = data_source_name
                     try:
-                        ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
+                        ds_dict1 = DataSource(**ds_dict).model_dump(exclude_none=True, mode='json')
 
                         m_all = d.findall('Measurement')
                         for m in m_all:
@@ -210,7 +209,7 @@ def measurement_list(base_url, hts, site, measurement=None, timeout=60, **kwargs
 
                             m_dict['MeasurementName'] = m_dict.pop('RequestAs')
 
-                            m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
+                            m_dict1 = Measurement(**m_dict).model_dump(exclude_none=True, mode='json')
                             m_dict1.update(ds_dict1)
 
                             data_list.append(m_dict1)
@@ -298,7 +297,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
             raise NotImplementedError(' and '.join(['HydSection', 'HydFacecard']) +  ' Data Types have not been implemented.')
 
         ds_dict['DataSourceName'] = data_source_name
-        ds_dict1 = orjson.loads(DataSource(**ds_dict).json(exclude_none=True))
+        ds_dict1 = DataSource(**ds_dict).model_dump(exclude_none=True, mode='json')
 
         ## Get the measurement info
         measurements = ds.findall('ItemInfo')
@@ -321,7 +320,7 @@ def get_data(base_url, hts, site, measurement, from_date=None, to_date=None, agg
                 m_dict['MeasurementName'] = m_name
                 m_dict['Item'] = int(m.attrib['ItemNumber'])
 
-                m_dict1 = orjson.loads(Measurement(**m_dict).json(exclude_none=True))
+                m_dict1 = Measurement(**m_dict).model_dump(exclude_none=True, mode='json')
 
                 ds_dict1.update(m_dict1)
 

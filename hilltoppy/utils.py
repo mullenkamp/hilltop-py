@@ -10,9 +10,8 @@ try:
     from configparser import ConfigParser
 except ImportError:
     from ConfigParser import SafeConfigParser as ConfigParser
-import orjson
-from typing import List, Union
-from pydantic import BaseModel, Field, HttpUrl, conint, confloat
+from typing import List, Optional, Union
+from pydantic import BaseModel, Field
 from enum import Enum
 import requests
 import xml.etree.ElementTree as ET
@@ -27,10 +26,6 @@ available_requests = ['SiteList', 'MeasurementList', 'CollectionList', 'GetData'
 
 ##############################################
 ### Data models
-
-
-def orjson_dumps(v, *, default):
-    return orjson.dumps(v, default=default, option=orjson.OPT_NON_STR_KEYS | orjson.OPT_OMIT_MICROSECONDS | orjson.OPT_SERIALIZE_NUMPY).decode()
 
 
 class TSType(str, Enum):
@@ -71,11 +66,11 @@ class Site(BaseModel):
 
     """
     SiteName: str = Field(..., description='The unique name of the site used by Hilltop.')
-    Easting: Union[int, float] = Field(None, description='The easting probably in NZTM.')
-    Northing: Union[int, float] = Field(None, description='The northing probably in NZTM.')
-    Latitude: Union[int, float] = Field(None, description='The Latitude in WGS84 decimal degrees.')
-    Longitude: Union[int, float] = Field(None, description='The Longitude in WGS84 decimal degrees.')
-    properties: dict = Field(None, description='A variety of other site properties/data.')
+    Easting: Optional[Union[int, float]] = Field(default=None, description='The easting probably in NZTM.')
+    Northing: Optional[Union[int, float]] = Field(default=None, description='The northing probably in NZTM.')
+    Latitude: Optional[Union[int, float]] = Field(default=None, description='The Latitude in WGS84 decimal degrees.')
+    Longitude: Optional[Union[int, float]] = Field(default=None, description='The Longitude in WGS84 decimal degrees.')
+    properties: Optional[dict] = Field(default=None, description='A variety of other site properties/data.')
 
 
 class Measurement(BaseModel):
@@ -84,19 +79,14 @@ class Measurement(BaseModel):
     """
     MeasurementName: str = Field(..., description='The measurement name associated with the DataSource. The MeasurementName is derived from the RequestAs field provided by the Hilltop server. As such, this may include the DataSourceName appended onto the Measurement name with surrounding brackets.')
     # Item: int = Field(..., description='The Measurement item position in the Data when NumItems in the DataSource > 1.')
-    Units: str = Field(None, description="The units of the data.")
+    Units: Optional[str] = Field(default=None, description="The units of the data.")
     Precision: int = Field(..., description='The precision of the data as the number of decimal places.')
-    Divisor: int = Field(None, description="Divide the data by the divisor to get the appropriate Units.")
-    Precision: int = Field(..., description='The precision of the data as the number of decimal places.')
-    MeasurementGroup: str = Field(None, description="I've only seen Virtual Measurements so far...")
-    VMStart: datetime = Field(None, description="The start time of the virtual measurement.")
-    VMFinish: datetime = Field(None, description="The end time of the virtual measurement.")
-    Item: int = Field(None, description="The measurement item number to know which result goes with which measurement.")
+    Divisor: Optional[int] = Field(default=None, description="Divide the data by the divisor to get the appropriate Units.")
+    MeasurementGroup: Optional[str] = Field(default=None, description="I've only seen Virtual Measurements so far...")
+    VMStart: Optional[datetime] = Field(default=None, description="The start time of the virtual measurement.")
+    VMFinish: Optional[datetime] = Field(default=None, description="The end time of the virtual measurement.")
+    Item: Optional[int] = Field(default=None, description="The measurement item number to know which result goes with which measurement.")
     # RequestAs: str = Field(None, description="The minimum measurement name the Hilltop server uses for responses and requests.")
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
 
 
 class DataSource(BaseModel):
@@ -109,12 +99,8 @@ class DataSource(BaseModel):
     TSType: TSType
     DataType: DataType
     Interpolation: Interpolation
-    From: datetime = None
-    To: datetime = None
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
+    From: Optional[datetime] = None
+    To: Optional[datetime] = None
 
 
 ##############################################

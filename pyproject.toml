@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "hilltop-py"
 dynamic = ["version"]
 description = "Functions to access Hilltop data"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 readme = "README.rst"
 license = "Apache-2.0"
 authors = [
@@ -26,9 +26,8 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
-    "orjson",
     "pandas",
-    "pydantic<2",
+    "pydantic>=2",
     "requests",
 ]
 
@@ -63,4 +62,4 @@ packages = [
 ]
 
 [tool.hatch.version]
-path = "booklet/__init__.py"
+path = "hilltoppy/__init__.py"
